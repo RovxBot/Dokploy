@@ -1,31 +1,26 @@
-version: "3.8"
+version: "3.0"
+
 services:
   jellyfin:
-    image: jellyfin/jellyfin:latest
+    image: jellyfin/jellyfin
+    env_file: /var/data/config/jellyfin/jellyfin.env
     volumes:
-      - config:/config
-      - cache:/cache
-      - media:/media
-    restart: "unless-stopped"
-    # Optional - alternative address used for autodiscovery
-    environment:
-      - JELLYFIN_PublishedServerUrl=http://${JELLYFIN_HOST}
-    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-  tailscale:
-    image: tailscale/tailscale:latest
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    environment:
-      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
-    volumes:
-      - tailscale-data:/var/lib/tailscale
-    network_mode: "host"
-    restart: unless-stopped
-volumes:
-  config:
-  cache:
-  media:
-  tailscale-data:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/data/jellyfin:/config
+      - /var/data/runtime/jellyfin:/cache
+      - /srv/data/:/data
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik_public"
+        - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.example.com`)"
+        - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+
+    networks:
+        - traefik_public
+    ports:
+      - 8096:8096
+
+networks:
+  traefik_public:
+    external: true

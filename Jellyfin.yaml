@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    volumes:
+      - config:/config
+      - cache:/cache
+      - media:/media
+    restart: "unless-stopped"
+    # Optional - alternative address used for autodiscovery
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://${JELLYFIN_HOST}
+    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  tailscale:
+    image: tailscale/tailscale:latest
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+    network_mode: "host"
+    restart: unless-stopped
+volumes:
+  config:
+  cache:
+  media:
+  tailscale-data:

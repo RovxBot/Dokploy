@@ -1,23 +1,23 @@
 services:
   jellyfin:
-    image: jellyfin/jellyfin:latest
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    user: uid:gid
+    network_mode: 'host'
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/data/jellyfin:/config
-      - /var/data/runtime/jellyfin:/cache
-      - /srv/data/:/data
-    deploy:
-      labels:
-        - "traefik.enable=true"
-        - "traefik.docker.network=traefik_public"
-        - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.example.com`)"
-        - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
-
-    networks:
-        - traefik_public
-    ports:
-      - 8096:8096
-
-networks:
-  traefik_public:
-    external: true
+      - config:/config
+      - cache:/cache
+      - type: bind
+        source: /path/to/media
+        target: /media
+      - type: bind
+        source: /path/to/media2
+        target: /media2
+        read_only: true
+    restart: 'unless-stopped'
+    # Optional - alternative address used for autodiscovery
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://192.168.1.190:8096
+    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

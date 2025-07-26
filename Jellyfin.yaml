@@ -15,7 +15,7 @@ services:
     restart: 'unless-stopped'
     # Optional - alternative address used for autodiscovery
     environment:
-      - JELLYFIN_PublishedServerUrl=http://192.168.1.190:8096
+      - JELLYFIN_PublishedServerUrl=https://metal0.risk-lenok.ts.net
     # Optional - may be necessary for docker healthcheck to pass if running in host network mode
     extra_hosts:
       - 'host.docker.internal:host-gateway'

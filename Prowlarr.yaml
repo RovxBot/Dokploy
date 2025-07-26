@@ -8,7 +8,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - /path/to/prowlarr/data:/config
+      - /srv/appdata/prowlarr/config:/app/config
     ports:
       - 9696:9696
     restart: unless-stopped

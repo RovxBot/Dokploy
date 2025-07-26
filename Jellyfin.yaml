@@ -4,15 +4,14 @@ services:
     container_name: jellyfin
     network_mode: 'host'
     volumes:
-      - config:/config
-      - cache:/cache
+      - /srv/appdata/jellyfin/config:/config
+      - /srv/appdata/jellyfin/cache:/cache
       - type: bind
-        source: /path/to/media
-        target: /media
+        source: /srv/media/plex
+        target: /media/plex
       - type: bind
-        source: /path/to/media2
-        target: /media2
-        read_only: true
+        source: /srv/media/emby
+        target: /media/emby
     restart: 'unless-stopped'
     # Optional - alternative address used for autodiscovery
     environment:
@@ -21,5 +20,4 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 volumes:
-  config:
-  cache:
+  # Named volumes are not used now, but you can keep this section for reference

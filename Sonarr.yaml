@@ -8,9 +8,9 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - /path/to/sonarr/data:/config
-      - /path/to/tvseries:/tv #optional
-      - /path/to/downloadclient-downloads:/downloads #optional
+      - /srv/appdata/sonarr/config:/app/config
+#      - /path/to/tvseries:/tv #optional
+#      - /path/to/downloadclient-downloads:/downloads #optional
     ports:
       - ${port}
     restart: unless-stopped

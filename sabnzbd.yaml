@@ -8,9 +8,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - /path/to/sabnzbd/config:/config
-      - /path/to/incomplete/downloads:/incomplete-downloads #optional
-      - /path/to/downloads:/downloads #optional
+      - /srv/appdata/sabnzbd/config:/app/config
     ports:
       - 8080:8080
     restart: unless-stopped

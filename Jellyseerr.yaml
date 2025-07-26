@@ -9,5 +9,5 @@ services:
        ports:
             - ${PORT}
        volumes:
-            - /path/to/appdata/config:/app/config
+            - /srv/appdata/jellyseerr/config:/app/config
        restart: unless-stopped

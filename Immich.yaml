@@ -5,7 +5,7 @@ services:
     image: ghcr.io/immich-app/immich-server:latest
 
     volumes:
-      - immich-library:/usr/src/app/upload
+      - /srv/appdata/immich/library:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       immich-redis:
@@ -39,7 +39,7 @@ services:
     image: ghcr.io/immich-app/immich-machine-learning:v1.121.0
 
     volumes:
-      - immich-model-cache:/cache
+      - /srv/appdata/immich/model-cache:/cache
     environment:
       REDIS_HOSTNAME: ${REDIS_HOSTNAME}
       REDIS_PORT: ${REDIS_PORT}
@@ -55,7 +55,7 @@ services:
     image: redis:6.2-alpine
 
     volumes:
-      - immich-redis-data:/data
+      - /srv/appdata/immich/redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -67,7 +67,7 @@ services:
     image: tensorchord/pgvecto-rs:pg14-v0.2.0
 
     volumes:
-      - immich-postgres:/var/lib/postgresql/data
+      - /srv/appdata/immich/postgres:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USERNAME}
@@ -99,9 +99,3 @@ services:
 networks:
   dokploy-network:
     external: true
-
-volumes:
-  immich-model-cache:
-  immich-postgres:
-  immich-library:
-  immich-redis-data: 

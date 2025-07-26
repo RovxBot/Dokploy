@@ -8,9 +8,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     volumes:
-      - /path/to/radarr/data:/config
-      - /path/to/movies:/movies #optional
-      - /path/to/download-client-downloads:/downloads #optional
+      - /srv/appdata/radarr/config:/app/config 
     ports:
       - 7878:7878
     restart: unless-stopped

@@ -1,6 +1,6 @@
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:latest
+    image: ghcr.io/imagegenius/immich:latest
 
     volumes:
       - /srv/appdata/immich/library:/usr/src/app/upload

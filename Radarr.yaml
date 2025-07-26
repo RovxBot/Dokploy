@@ -1,14 +1,16 @@
----
+version: "3.8"
 services:
   radarr:
     image: lscr.io/linuxserver/radarr:latest
-    container_name: radarr
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - /srv/appdata/radarr/config:/app/config 
+      - /srv/appdata/radarr/config:/app/config
     ports:
       - ${PORTS}
-    restart: unless-stopped
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure

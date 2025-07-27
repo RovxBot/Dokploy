@@ -5,16 +5,16 @@ services:
     image: jellyfin/jellyfin
     network_mode: host
     volumes:
-      - /srv/appdata/jellyfin/config:/config
-      - /srv/appdata/jellyfin/cache:/cache
+      - ${VOLUME1}
+      - ${VOLUME2}
       - type: bind
-        source: /srv/media/plex
-        target: /media/plex
+        source: ${BIND1SOURCE}
+        target: ${BIND1TARGET}
       - type: bind
-        source: /srv/media/emby
-        target: /media/emby
+        source: ${BIND2SOURCE}
+        target: ${BIND2TARGET}
     environment:
-      - JELLYFIN_PublishedServerUrl=https://metal0.risk-lenok.ts.net
+      - JELLYFIN_PublishedServerUrl=${PUBLISHED}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     deploy:

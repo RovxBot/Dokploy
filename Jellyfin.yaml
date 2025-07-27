@@ -15,4 +15,5 @@ services:
         target: ${BIND2TARGET}
     environment:
       - JELLYFIN_PublishedServerUrl=${PUBLISHED}
+      - JELLYFIN_NETWORK_BIND_ADDRESS=127.0.0.1
     restart: unless-stopped

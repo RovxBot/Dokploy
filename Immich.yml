@@ -8,6 +8,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
+    environment:
+      - DB_SKIP_MIGRATIONS=true
     depends_on:
       - redis
       - database
@@ -36,6 +38,8 @@ services:
       - model-cache:/cache
     env_file:
       - .env
+    environment:
+      - DB_SKIP_MIGRATIONS=true
     networks:
       - dokploy-network
     deploy:

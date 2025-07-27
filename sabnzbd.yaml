@@ -7,6 +7,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Australia/Adelaide
+      - HOST_WHITELIST=${HOST}
     volumes:
       - /srv/appdata/sabnzbd/config:/config
     networks:

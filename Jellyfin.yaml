@@ -1,8 +1,9 @@
+version: "3.8"
+
 services:
   jellyfin:
     image: jellyfin/jellyfin
-    container_name: jellyfin
-    network_mode: 'host'
+    network_mode: host
     volumes:
       - /srv/appdata/jellyfin/config:/config
       - /srv/appdata/jellyfin/cache:/cache
@@ -12,10 +13,13 @@ services:
       - type: bind
         source: /srv/media/emby
         target: /media/emby
-    restart: 'unless-stopped'
-    # Optional - alternative address used for autodiscovery
     environment:
       - JELLYFIN_PublishedServerUrl=https://metal0.risk-lenok.ts.net
-    # Optional - may be necessary for docker healthcheck to pass if running in host network mode
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == metal0  # Funnel will only run from this node

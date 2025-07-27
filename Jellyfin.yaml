@@ -15,8 +15,4 @@ services:
         target: ${BIND2TARGET}
     environment:
       - JELLYFIN_PublishedServerUrl=${PUBLISHED}
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.hostname == metal0  # Funnel will only run from this node
+    restart: unless-stopped

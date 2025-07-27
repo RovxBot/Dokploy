@@ -1,13 +1,26 @@
-version: '3'
+version: "3.8"
+
 services:
-    jellyseerr:
-       image: fallenbagel/jellyseerr:latest
-       container_name: jellyseerr
-       environment:
-            - LOG_LEVEL=debug
-            - TZ=${TZ}
-       ports:
-            - ${PORT}
-       volumes:
-            - /srv/appdata/jellyseerr/config:/app/config
-       restart: unless-stopped
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=${TZ}
+    volumes:
+      - /srv/appdata/jellyseerr/config:/app/config
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.cooked.beer`)"
+        - "traefik.http.routers.jellyseerr.entrypoints=web"
+        - "traefik.http.routers.jellyseerr.tls=false"
+        - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
+        - "traefik.docker.network=dokploy-network"
+
+networks:
+  dokploy-network:
+    external: true
+     

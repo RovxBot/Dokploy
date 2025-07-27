@@ -1,14 +1,26 @@
----
+version: "3.8"
+
 services:
   sabnzbd:
     image: lscr.io/linuxserver/sabnzbd:latest
-    container_name: sabnzbd
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Etc/UTC
+      - TZ=Australia/Adelaide
     volumes:
-      - /srv/appdata/sabnzbd/config:/app/config
-    ports:
-      - 8080:8080
-    restart: unless-stopped
+      - /srv/appdata/sabnzbd/config:/config
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.cooked.beer`)"
+        - "traefik.http.routers.sabnzbd.entrypoints=web"
+        - "traefik.http.routers.sabnzbd.tls=false"
+        - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
+        - "traefik.docker.network=dokploy-network"
+
+networks:
+  dokploy-network:
+    external: true

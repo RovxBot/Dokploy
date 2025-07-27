@@ -1,3 +1,0 @@
-root@metal2:~# docker network inspect dokploy-network
-[]
-Error response from daemon: network dokploy-network not found

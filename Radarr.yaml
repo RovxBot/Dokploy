@@ -9,6 +9,8 @@ services:
       - TZ=Australia/Adelaide
     volumes:
       - /srv/appdata/radarr/config:/config
+      - /srv/media/emby/Movies:/movies
+      - /srv/media/plex/Downloads:/downloads
     networks:
       - dokploy-network
     deploy:

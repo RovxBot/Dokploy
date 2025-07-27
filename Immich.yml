@@ -18,8 +18,8 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.immich.rule=Host(`immich.cooked.beer`)"
-        - "traefik.http.routers.immich.entrypoints=websecure"
-        - "traefik.http.routers.immich.tls.certresolver=letsencrypt"
+        - "traefik.http.routers.immich.entrypoints=web"
+        - "traefik.http.routers.immich.tls=false"
         - "traefik.http.services.immich.loadbalancer.server.port=2283"
         - "traefik.docker.network=dokploy-network"
       restart_policy:

@@ -10,6 +10,7 @@ services:
       - HOST_WHITELIST=${HOST}
     volumes:
       - /srv/appdata/sabnzbd/config:/config
+      - /srv/media/plex/Downloads:/downloads
     networks:
       - dokploy-network
     deploy:

@@ -118,19 +118,20 @@ services:
     image: grafana/loki:2.9.4
     command: -config.file=/etc/loki/config.yaml
     volumes:
-      - ./loki/config.yaml:/etc/loki/config.yaml
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro
     networks:
       - monitor
     deploy:
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1024M
-        reservations:
-          cpus: '0.25'
+          cpus: "1.0"
           memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
 volumes:
   prometheus_data:

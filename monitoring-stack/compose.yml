@@ -147,10 +147,6 @@ volumes:
   alertmanager_data:
   loki_data:
 
-configs:
-  prometheus_config:
-    file: ./prometheus/prometheus.yml
-
 networks:
   monitor:
     driver: overlay

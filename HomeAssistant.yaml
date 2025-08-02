@@ -50,38 +50,6 @@ services:
       retries: 3
       start_period: 60s
 
-  # Optional: MQTT Broker (Mosquitto) for IoT device communication
-  mosquitto:
-    image: eclipse-mosquitto:latest
-    volumes:
-      - /srv/appdata/homeassistant/mosquitto/config:/mosquitto/config
-      - /srv/appdata/homeassistant/mosquitto/data:/mosquitto/data
-      - /srv/appdata/homeassistant/mosquitto/log:/mosquitto/log
-    networks:
-      - dokploy-network
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    deploy:
-      replicas: 1
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.mosquitto.rule=Host(`mqtt.cooked.beer`)"
-        - "traefik.http.routers.mosquitto.entrypoints=web"
-        - "traefik.http.routers.mosquitto.tls=false"
-        - "traefik.http.services.mosquitto.loadbalancer.server.port=9001"
-        - "traefik.docker.network=dokploy-network"
-      restart_policy:
-        condition: on-failure
-      placement:
-        constraints:
-          - node.role == worker
-    healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "test"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # Optional: Node-RED for automation flows
   nodered:
     image: nodered/node-red:latest

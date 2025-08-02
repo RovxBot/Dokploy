@@ -1,0 +1,14 @@
+# Climate
+# Add your climate entities here
+
+# Example: Generic thermostat
+- platform: generic_thermostat
+  name: "Living Room Thermostat"
+  heater: switch.heater
+  target_sensor: sensor.temperature_living_room
+  min_temp: 15
+  max_temp: 30
+  ac_mode: false
+  target_temp: 20
+  cold_tolerance: 0.3
+  hot_tolerance: 0

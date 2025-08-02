@@ -1,0 +1,26 @@
+# Entity Customizations
+# Customize your entities here
+
+# Example customizations
+sensor.temperature_living_room:
+  friendly_name: "Living Room Temperature"
+  icon: mdi:thermometer
+  unit_of_measurement: "°C"
+
+light.living_room:
+  friendly_name: "Living Room Light"
+  icon: mdi:lightbulb
+
+switch.coffee_maker:
+  friendly_name: "Coffee Maker"
+  icon: mdi:coffee
+
+binary_sensor.front_door:
+  friendly_name: "Front Door"
+  device_class: door
+  icon: mdi:door
+
+binary_sensor.motion_living_room:
+  friendly_name: "Living Room Motion"
+  device_class: motion
+  icon: mdi:motion-sensor

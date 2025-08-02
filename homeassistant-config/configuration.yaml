@@ -1,0 +1,166 @@
+# Home Assistant Configuration
+# https://www.home-assistant.io/docs/configuration/
+
+# Basic Configuration
+homeassistant:
+  name: Home
+  latitude: -34.9285
+  longitude: 138.6007
+  elevation: 50
+  unit_system: metric
+  time_zone: Australia/Adelaide
+  country: AU
+  currency: AUD
+  
+  # Customize entities
+  customize: !include customize.yaml
+  
+  # Packages
+  packages: !include_dir_named packages
+
+# Default Configuration
+default_config:
+
+# Frontend
+frontend:
+  themes: !include_dir_merge_named themes
+
+# HTTP Configuration
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 10.0.0.0/8
+  ip_ban_enabled: true
+  login_attempts_threshold: 5
+
+# Database
+recorder:
+  db_url: sqlite:////config/home-assistant_v2.db
+  purge_keep_days: 30
+  commit_interval: 1
+  exclude:
+    domains:
+      - automation
+      - updater
+    entity_globs:
+      - sensor.weather_*
+    entities:
+      - sun.sun
+      - sensor.date
+      - sensor.time
+
+# History
+history:
+  include:
+    domains:
+      - sensor
+      - switch
+      - light
+      - binary_sensor
+      - climate
+  exclude:
+    entities:
+      - sensor.date
+      - sensor.time
+
+# Logbook
+logbook:
+  exclude:
+    domains:
+      - automation
+      - script
+
+# MQTT Configuration (if using Mosquitto)
+mqtt:
+  broker: mosquitto
+  port: 1883
+  # username: your_mqtt_username
+  # password: your_mqtt_password
+  discovery: true
+  discovery_prefix: homeassistant
+
+# Text to Speech
+tts:
+  - platform: google_translate
+    service_name: google_say
+
+# Cloud (optional - for remote access)
+# cloud:
+
+# Mobile App
+mobile_app:
+
+# Person Tracking
+person:
+
+# Zone Configuration
+zone:
+  - name: Home
+    latitude: -34.9285
+    longitude: 138.6007
+    radius: 100
+    icon: mdi:home
+
+  - name: Work
+    latitude: -34.9200
+    longitude: 138.6100
+    radius: 50
+    icon: mdi:briefcase
+
+# Input Helpers
+input_boolean: !include input_boolean.yaml
+input_number: !include input_number.yaml
+input_select: !include input_select.yaml
+input_text: !include input_text.yaml
+input_datetime: !include input_datetime.yaml
+
+# Scripts and Automations
+script: !include scripts.yaml
+automation: !include automations.yaml
+scene: !include scenes.yaml
+
+# Groups
+group: !include groups.yaml
+
+# Sensors
+sensor: !include sensors.yaml
+
+# Binary Sensors
+binary_sensor: !include binary_sensors.yaml
+
+# Switches
+switch: !include switches.yaml
+
+# Lights
+light: !include lights.yaml
+
+# Climate
+climate: !include climate.yaml
+
+# Device Trackers
+device_tracker: !include device_tracker.yaml
+
+# Notifications
+notify: !include notify.yaml
+
+# Camera
+camera: !include cameras.yaml
+
+# Media Players
+media_player: !include media_players.yaml
+
+# Energy Management
+energy:
+
+# System Health
+system_health:
+
+# Logger Configuration
+logger:
+  default: info
+  logs:
+    homeassistant.core: debug
+    homeassistant.components.mqtt: debug
+    homeassistant.components.automation: debug

@@ -1,0 +1,17 @@
+# Switches
+# Add your switches here
+
+# Example: Template switches
+- platform: template
+  switches:
+    example_switch:
+      friendly_name: "Example Switch"
+      value_template: "{{ is_state('input_boolean.example', 'on') }}"
+      turn_on:
+        service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.example
+      turn_off:
+        service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.example

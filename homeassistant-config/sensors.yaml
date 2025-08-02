@@ -1,0 +1,31 @@
+# Sensors
+# Add your sensors here
+
+# Example: Time and Date sensors
+- platform: time_date
+  display_options:
+    - 'time'
+    - 'date'
+    - 'date_time'
+    - 'date_time_utc'
+    - 'date_time_iso'
+    - 'time_date'
+    - 'time_utc'
+    - 'beat'
+
+# Example: System Monitor
+- platform: systemmonitor
+  resources:
+    - type: disk_use_percent
+      arg: /config
+    - type: memory_use_percent
+    - type: processor_use
+    - type: processor_temperature
+
+# Example: Template sensors
+- platform: template
+  sensors:
+    living_room_temperature_f:
+      friendly_name: "Living Room Temperature (F)"
+      unit_of_measurement: "°F"
+      value_template: "{{ (states('sensor.temperature_living_room') | float * 9/5 + 32) | round(1) }}"

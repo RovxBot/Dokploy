@@ -1,0 +1,33 @@
+# Automations
+# Add your automations here
+
+# Example: Welcome Home Automation
+- id: welcome_home
+  alias: "Welcome Home"
+  description: "Turn on lights when someone arrives home"
+  trigger:
+    - platform: state
+      entity_id: person.your_name
+      to: "home"
+  condition:
+    - condition: sun
+      after: sunset
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.living_room
+      data:
+        brightness: 255
+        color_name: warm_white
+
+# Example: Good Night Automation
+- id: good_night
+  alias: "Good Night"
+  description: "Turn off all lights at bedtime"
+  trigger:
+    - platform: time
+      at: "23:00:00"
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: all

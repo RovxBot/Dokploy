@@ -1,0 +1,38 @@
+# Scripts
+# Add your scripts here
+
+# Example: Movie Time Script
+movie_time:
+  alias: "Movie Time"
+  description: "Dim lights and turn on TV for movie watching"
+  sequence:
+    - service: light.turn_on
+      target:
+        entity_id: light.living_room
+      data:
+        brightness: 50
+        color_name: red
+    - service: media_player.turn_on
+      target:
+        entity_id: media_player.tv
+    - service: notify.mobile_app
+      data:
+        message: "Movie time! Lights dimmed and TV turned on."
+
+# Example: Security Check Script
+security_check:
+  alias: "Security Check"
+  description: "Check all doors and windows"
+  sequence:
+    - service: notify.mobile_app
+      data:
+        message: "Running security check..."
+    - condition: state
+      entity_id: binary_sensor.front_door
+      state: "off"
+    - condition: state
+      entity_id: binary_sensor.back_door
+      state: "off"
+    - service: notify.mobile_app
+      data:
+        message: "Security check complete - all doors and windows secure."

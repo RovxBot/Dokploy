@@ -26,17 +26,15 @@ This guide explains how to set up persistent, shared storage for Docker Swarm us
     /srv/appdata/prowlarr/config \
     /srv/appdata/radarr/config \
     /srv/appdata/sonarr/config \
-    /srv/appdata/sabnzbd/config 
-    ----------------------------------- Above this line is done
-  sudo mkdir -p \
-    /srv/appdata/docker.sock \
-    /srv/appdata/grafana \
-    /srv/appdata/prometheus/prom_data \
+    /srv/appdata/sabnzbd/config \
     /srv/appdata/homeassistant/config \
     /srv/appdata/homeassistant/mosquitto/config \
     /srv/appdata/homeassistant/mosquitto/data \
     /srv/appdata/homeassistant/mosquitto/log \
     /srv/appdata/homeassistant/nodered
+    ----------------------------------- Above this line is done
+  sudo mkdir -p \
+
   sudo chown -R 1000:1000 /srv/appdata
   ```
 - Edit `/etc/exports` and add a line to share the entire `/srv/appdata` directory with all your Swarm nodes:

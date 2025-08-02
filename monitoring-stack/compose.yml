@@ -2,13 +2,12 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
-    configs:
-      - source: prometheus_config
-        target: /etc/prometheus/prometheus.yml
     networks:
       - monitor
     deploy:
@@ -25,6 +24,8 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
     volumes:
       - alertmanager_data:/data
       - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
@@ -38,8 +39,8 @@ services:
           cpus: '0.3'
           memory: 256M
         reservations:
-          cpus: '0.25'
-          memory: 512M
+          cpus: '0.1'
+          memory: 128M
 
   prometheus-msteams:
     image: bzon/prometheus-msteams

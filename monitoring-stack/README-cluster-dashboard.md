@@ -42,8 +42,14 @@ This dashboard provides a comprehensive view of your cluster with the following 
 
 ### Prerequisites
 - Docker Swarm cluster with nodes named metal0, metal1, metal2
-- Node-exporter running on each node (port 9100)
-- cAdvisor running on each node (port 8080)
+- Node-exporter running on each node (port 9100) - ✅ VERIFIED
+- cAdvisor running on each node (port 8080) - ✅ VERIFIED
+
+### Current Status
+Your monitoring stack is deployed and working:
+- Prometheus is successfully scraping metrics from both services
+- cadvisor: 1/1 up at `cadvisor:8080`
+- node_exporter: 1/1 up at `node-exporter:9100`
 
 ### 1. Update Prometheus Configuration
 The prometheus.yml has been updated to scrape metrics from all three nodes:
@@ -74,7 +80,39 @@ docker service ls
 - Prometheus should be automatically configured as the default data source
 - Check that metrics are being collected from all three nodes
 
+## Important Notes for Docker Swarm
+
+Your current setup uses Docker Swarm with `deploy: mode: global` for both node-exporter and cAdvisor. This means:
+
+1. **Service Discovery**: Prometheus sees the services through Docker's internal load balancer
+2. **Node Identification**: Individual node metrics are identified through labels in the metrics themselves
+3. **Single Endpoint**: Each service appears as one endpoint in Prometheus targets, but contains data from all nodes
+
+### Expected Behavior
+- The dashboard should show metrics from all three nodes (metal0, metal1, metal2)
+- Each metric will be labeled with the source node information
+- If you only see one node's data, the global deployment may need adjustment
+
 ## Troubleshooting
+
+### Only Seeing One Node's Data
+If the dashboard only shows data from one node instead of all three:
+
+1. **Check global deployment**:
+   ```bash
+   docker service ps monitoring_node-exporter
+   docker service ps monitoring_cadvisor
+   ```
+   You should see one task per node.
+
+2. **Verify all nodes are active**:
+   ```bash
+   docker node ls
+   ```
+   All nodes should show as "Ready" and "Active".
+
+3. **Check service constraints**:
+   The services should be running on all nodes without placement constraints.
 
 ### No Data Showing
 1. Verify node-exporter is running on all nodes:

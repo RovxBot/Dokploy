@@ -120,8 +120,8 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     ports:
-      - target: 8080
-        published: 8080
+      - target: 8085
+        published: 8085
         protocol: tcp
         mode: host
     networks:

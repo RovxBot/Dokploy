@@ -10,10 +10,22 @@ services:
       - type: bind
         source: ${BIND1SOURCE}
         target: ${BIND1TARGET}
+        read_only: true
       - type: bind
         source: ${BIND2SOURCE}
         target: ${BIND2TARGET}
+        read_only: true
     environment:
       - JELLYFIN_PublishedServerUrl=${PUBLISHED}
       - JELLYFIN_NETWORK_BIND_ADDRESS=127.0.0.1
+      - JELLYFIN_DATA_DIR=/config
+      - JELLYFIN_CONFIG_DIR=/config
+      - JELLYFIN_LOG_DIR=/config/log
+      - JELLYFIN_CACHE_DIR=/cache
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

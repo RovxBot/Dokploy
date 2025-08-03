@@ -108,6 +108,9 @@ services:
       - monitor
     deploy:
       mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -125,6 +128,9 @@ services:
       - monitor
     deploy:
       mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
 
   loki:
     image: grafana/loki:2.9.4

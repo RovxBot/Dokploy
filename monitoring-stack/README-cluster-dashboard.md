@@ -122,24 +122,87 @@ The monitoring stack has been updated to scrape metrics directly from individual
 
 ## Troubleshooting
 
-### Only Seeing One Node's Data
-If the dashboard only shows data from one node instead of all three:
+### Context Deadline Exceeded Error (Specific Node Unreachable)
 
-1. **Check global deployment**:
+If you see errors like "Get 'http://metal0:9100/metrics': context deadline exceeded" for a specific node:
+
+1. **Check if the node services are running**:
    ```bash
-   docker service ps monitoring_node-exporter
-   docker service ps monitoring_cadvisor
+   # Check which nodes have the services running
+   docker service ps monitoring_node-exporter --format "table {{.Node}}\t{{.CurrentState}}\t{{.Error}}"
+   docker service ps monitoring_cadvisor --format "table {{.Node}}\t{{.CurrentState}}\t{{.Error}}"
    ```
-   You should see one task per node.
 
-2. **Verify all nodes are active**:
+2. **Test direct connectivity from Prometheus container**:
    ```bash
+   # Get the Prometheus container ID
+   docker ps | grep prometheus
+
+   # Test connectivity from inside Prometheus container
+   docker exec -it <prometheus-container-id> wget -O- --timeout=5 http://metal0:9100/metrics
+   docker exec -it <prometheus-container-id> wget -O- --timeout=5 http://metal0:8080/metrics
+   ```
+
+3. **Check if services are bound to the correct interfaces on metal0**:
+   ```bash
+   # SSH to metal0 and check if services are listening
+   ssh metal0 "netstat -tlnp | grep -E ':(9100|8080)'"
+   # or
+   ssh metal0 "ss -tlnp | grep -E ':(9100|8080)'"
+   ```
+
+4. **Verify Docker Swarm network connectivity**:
+   ```bash
+   # Check if metal0 is properly connected to the swarm
    docker node ls
+   docker node inspect metal0 --format '{{.Status.State}}'
    ```
-   All nodes should show as "Ready" and "Active".
 
-3. **Check service constraints**:
-   The services should be running on all nodes without placement constraints.
+5. **Restart services on the problematic node**:
+   ```bash
+   # Force restart services on metal0
+   docker service update --force monitoring_node-exporter
+   docker service update --force monitoring_cadvisor
+
+   # Wait a moment, then check
+   docker service ps monitoring_node-exporter | grep metal0
+   docker service ps monitoring_cadvisor | grep metal0
+   ```
+
+### Manager Node (metal0) Connectivity Issues
+
+**IMPORTANT**: If metal0 is your Docker Swarm manager node, this explains the connectivity issues. Manager nodes sometimes have different service placement behavior.
+
+Since metal1 and metal2 are working fine, the issue is specifically with metal0 being the manager. Try these steps in order:
+
+1. **Immediate Fix - Restart services on metal0**:
+   ```bash
+   # Force update to restart services on all nodes (including metal0)
+   docker service update --force monitoring_node-exporter
+   docker service update --force monitoring_cadvisor
+   ```
+
+2. **Check if metal0 is accessible from the manager node**:
+   ```bash
+   # Test basic connectivity
+   ping metal0
+   telnet metal0 9100
+   telnet metal0 8080
+   ```
+
+3. **If metal0 is completely unreachable, temporarily exclude it**:
+   ```bash
+   # Edit prometheus.yml to temporarily remove metal0 targets
+   # Comment out or remove the metal0 lines:
+   # - 'metal0:9100'  # <- comment this out
+   # - 'metal0:8080'  # <- comment this out
+
+   # Then redeploy
+   docker stack deploy -c compose.yml monitoring
+   ```
+
+### Only Seeing Some Nodes' Data
+If the dashboard shows data from some nodes but not others:
 
 ### No Data Showing
 1. Verify node-exporter is running on all nodes:

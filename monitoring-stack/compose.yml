@@ -94,10 +94,16 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
+      - '--web.listen-address=0.0.0.0:9100'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+    ports:
+      - target: 9100
+        published: 9100
+        protocol: tcp
+        mode: host
     networks:
       - monitor
     deploy:
@@ -110,6 +116,11 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
     networks:
       - monitor
     deploy:

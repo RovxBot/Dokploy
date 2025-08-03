@@ -62,13 +62,39 @@ The prometheus.yml has been updated to scrape metrics from all three nodes:
         - 'metal2:9100'
 ```
 
-### 2. Deploy the Monitoring Stack
+### 2. Deploy the Updated Monitoring Stack
+
+**IMPORTANT**: The configuration has been updated to scrape metrics from individual nodes (metal0, metal1, metal2) instead of the aggregated service endpoints.
+
 ```bash
-# Deploy the monitoring stack
-docker stack deploy -c monitoring-stack/compose.yml monitoring
+# Navigate to the monitoring stack directory
+cd monitoring-stack
+
+# Deploy the updated monitoring stack
+docker stack deploy -c compose.yml monitoring
 
 # Verify services are running
-docker service ls
+docker service ls | grep monitoring
+
+# Check that all nodes are reachable
+# Test node-exporter on each node:
+curl http://metal0:9100/metrics
+curl http://metal1:9100/metrics
+curl http://metal2:9100/metrics
+
+# Test cAdvisor on each node:
+curl http://metal0:8080/metrics
+curl http://metal1:8080/metrics
+curl http://metal2:8080/metrics
+```
+
+**Alternative**: Use the deployment script:
+```bash
+# On Linux/Mac:
+./deploy-updated-monitoring.sh
+
+# On Windows:
+bash deploy-updated-monitoring.sh
 ```
 
 ### 3. Access Grafana
@@ -76,22 +102,23 @@ docker service ls
 - Login with credentials from your environment variables
 - The "Cluster Overview Dashboard" should be automatically provisioned
 
-### 4. Verify Data Sources
+### 4. Verify Data Sources and Targets
 - Prometheus should be automatically configured as the default data source
-- Check that metrics are being collected from all three nodes
+- **CRITICAL**: Check Prometheus targets at http://localhost:9090/targets
+- You should now see **6 individual targets**:
+  - metal0:9100, metal1:9100, metal2:9100 (node_exporter)
+  - metal0:8080, metal1:8080, metal2:8080 (cadvisor)
+- All targets should show as "UP" status
 
-## Important Notes for Docker Swarm
+## Updated Configuration
 
-Your current setup uses Docker Swarm with `deploy: mode: global` for both node-exporter and cAdvisor. This means:
+The monitoring stack has been updated to scrape metrics directly from individual nodes instead of using Docker Swarm service discovery. This ensures you get per-node metrics for metal0, metal1, and metal2.
 
-1. **Service Discovery**: Prometheus sees the services through Docker's internal load balancer
-2. **Node Identification**: Individual node metrics are identified through labels in the metrics themselves
-3. **Single Endpoint**: Each service appears as one endpoint in Prometheus targets, but contains data from all nodes
-
-### Expected Behavior
-- The dashboard should show metrics from all three nodes (metal0, metal1, metal2)
-- Each metric will be labeled with the source node information
-- If you only see one node's data, the global deployment may need adjustment
+### Key Changes Made:
+1. **Prometheus Configuration**: Now targets each node directly
+2. **Port Configuration**: Services use host mode ports for direct access
+3. **Dashboard Queries**: Updated to show individual node metrics
+4. **New Panel Added**: Disk space used/free in bytes (in addition to percentage)
 
 ## Troubleshooting
 

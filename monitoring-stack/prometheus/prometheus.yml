@@ -20,18 +20,18 @@ scrape_configs:
   - job_name: 'node_exporter'
     static_configs:
       - targets:
-          - '192.168.1.190:9100'
-          - '192.168.1.191:9100'
-          - '192.168.1.192:9100'
+          - 'metal0:9100'
+          - 'metal1:9100'
+          - 'metal2:9100'
         labels:
           cluster: 'main'
 
   - job_name: 'cadvisor'
     static_configs:
       - targets:
-          - '192.168.1.190:8085'
-          - '192.168.1.191:8085'
-          - '192.168.1.192:8085'
+          - 'metal0:8085'
+          - 'metal1:8085'
+          - 'metal2:8085'
         labels:
           cluster: 'main'
 

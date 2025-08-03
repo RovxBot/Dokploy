@@ -12,21 +12,31 @@ fi
 # Check if nodes metal0, metal1, metal2 are reachable
 echo "🔍 Checking node connectivity..."
 
-for node in metal0 metal1 metal2; do
-    echo -n "  Checking $node:9100... "
-    if timeout 5 bash -c "</dev/tcp/$node/9100" 2>/dev/null; then
+# Check IP connectivity (what you can access from browser)
+for ip in 192.168.1.190 192.168.1.191 192.168.1.192; do
+    echo -n "  Checking $ip:9100... "
+    if timeout 5 bash -c "</dev/tcp/$ip/9100" 2>/dev/null; then
         echo "✅ Reachable"
     else
         echo "❌ Not reachable"
-        echo "    Make sure node-exporter is running on $node:9100"
     fi
-    
-    echo -n "  Checking $node:8080... "
-    if timeout 5 bash -c "</dev/tcp/$node/8080" 2>/dev/null; then
+
+    echo -n "  Checking $ip:8085... "
+    if timeout 5 bash -c "</dev/tcp/$ip/8085" 2>/dev/null; then
         echo "✅ Reachable"
     else
         echo "❌ Not reachable"
-        echo "    Make sure cAdvisor is running on $node:8080"
+    fi
+done
+
+echo ""
+echo "🔍 Testing hostname resolution (for Prometheus container)..."
+for node in metal0 metal1 metal2; do
+    echo -n "  Resolving $node... "
+    if nslookup $node >/dev/null 2>&1 || getent hosts $node >/dev/null 2>&1; then
+        echo "✅ Resolves"
+    else
+        echo "❌ Does not resolve (will use extra_hosts)"
     fi
 done
 
@@ -53,11 +63,15 @@ echo "🎯 Checking Prometheus targets..."
 echo "   You can verify targets at: http://localhost:9090/targets"
 echo "   Expected targets:"
 echo "   - metal0:9100 (node_exporter)"
-echo "   - metal1:9100 (node_exporter)" 
+echo "   - metal1:9100 (node_exporter)"
 echo "   - metal2:9100 (node_exporter)"
-echo "   - metal0:8080 (cadvisor)"
-echo "   - metal1:8080 (cadvisor)"
-echo "   - metal2:8080 (cadvisor)"
+echo "   - metal0:8085 (cadvisor) - Updated to avoid Sabnzbd conflict"
+echo "   - metal1:8085 (cadvisor)"
+echo "   - metal2:8085 (cadvisor)"
+echo ""
+echo "🔧 Network Fix Applied:"
+echo "   - Added extra_hosts to Prometheus container for hostname resolution"
+echo "   - This allows Prometheus to reach metal0, metal1, metal2 by hostname"
 
 echo ""
 echo "📈 Access your updated dashboard:"

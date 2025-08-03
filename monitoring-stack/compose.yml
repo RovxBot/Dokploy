@@ -10,6 +10,10 @@ services:
       - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
     networks:
       - monitor
+    extra_hosts:
+      - "metal0:192.168.1.190"
+      - "metal1:192.168.1.191"
+      - "metal2:192.168.1.192"
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -120,7 +124,7 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
     ports:
-      - target: 8085
+      - target: 8080
         published: 8085
         protocol: tcp
         mode: host

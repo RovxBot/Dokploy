@@ -40,10 +40,9 @@ processors:
 
 output.elasticsearch:
   hosts: ['elasticsearch:9200']
-  index: "metricbeat-%{+yyyy.MM.dd}"
+  # Using default index name to avoid template configuration issues
+  # index: "metricbeat-%{+yyyy.MM.dd}"
 
-setup.template.name: "metricbeat"
-setup.template.pattern: "metricbeat-*"
 setup.template.settings:
   index.number_of_shards: 1
   index.codec: best_compression

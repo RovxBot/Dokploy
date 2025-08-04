@@ -1,0 +1,24 @@
+filebeat.inputs:
+- type: container
+  paths:
+    - '/var/lib/docker/containers/*/*.log'
+  processors:
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+
+processors:
+- add_host_metadata:
+    when.not.contains.tags: forwarded
+
+output.elasticsearch:
+  hosts: ['elasticsearch:9200']
+  index: "filebeat-%{+yyyy.MM.dd}"
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+setup.kibana:
+  host: "kibana:5601"
+
+logging.level: info

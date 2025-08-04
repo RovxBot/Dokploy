@@ -14,9 +14,12 @@ output.elasticsearch:
   hosts: ['elasticsearch:9200']
   index: "filebeat-%{+yyyy.MM.dd}"
 
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat-*"
 setup.template.settings:
   index.number_of_shards: 1
   index.codec: best_compression
+  index.refresh_interval: 5s
 
 setup.kibana:
   host: "kibana:5601"

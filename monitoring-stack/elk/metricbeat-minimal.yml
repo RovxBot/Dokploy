@@ -34,9 +34,12 @@ output.elasticsearch:
   hosts: ['elasticsearch:9200']
   index: "metricbeat-jellyfin-%{+yyyy.MM.dd}"
 
+setup.template.name: "metricbeat-jellyfin"
+setup.template.pattern: "metricbeat-jellyfin-*"
 setup.template.settings:
   index.number_of_shards: 1
   index.codec: best_compression
+  index.refresh_interval: 30s
 
 setup.kibana:
   host: "kibana:5601"

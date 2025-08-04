@@ -1,8 +1,7 @@
 name: Low Disk Space Alert
-type: threshold
+type: frequency
 index: metricbeat-*
-threshold_ref: "count"
-threshold_cur: 1
+num_events: 1
 timeframe:
   minutes: 5
 filter:

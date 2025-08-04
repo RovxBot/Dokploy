@@ -9,3 +9,28 @@ writeback_index: elastalert_status
 writeback_alias: elastalert_alerts
 alert_time_limit:
   days: 2
+
+# Email configuration (optional - configure if you want email alerts)
+# smtp_host: smtp.gmail.com
+# smtp_port: 587
+# smtp_ssl: false
+# from_addr: your-email@gmail.com
+# smtp_auth_file: /opt/elastalert/smtp_auth.yaml
+
+# Logging configuration
+logging:
+  version: 1
+  incremental: false
+  disable_existing_loggers: false
+  formatters:
+    logline:
+      format: '%(asctime)s %(levelname)+8s %(name)+20s %(message)s'
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: logline
+      level: INFO
+      stream: ext://sys.stderr
+  root:
+    level: INFO
+    handlers: [console]

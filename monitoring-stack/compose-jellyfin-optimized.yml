@@ -55,6 +55,7 @@ services:
         - "traefik.http.services.kibana.loadbalancer.server.port=5601"
         - "traefik.http.routers.kibana.tls.certresolver=myresolver"
 
+  # Metricbeat - Only on worker nodes to minimize impact on Jellyfin
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.15.1
     user: root
@@ -74,6 +75,7 @@ services:
       placement:
         constraints:
           - node.platform.os == linux
+          - node.hostname != metal0  # Exclude Jellyfin node
       resources:
         limits:
           cpus: '0.2'
@@ -82,6 +84,7 @@ services:
           cpus: '0.1'
           memory: 64M
 
+  # Filebeat - Only on worker nodes to minimize impact on Jellyfin
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.15.1
     user: root
@@ -99,6 +102,7 @@ services:
       placement:
         constraints:
           - node.platform.os == linux
+          - node.hostname != metal0  # Exclude Jellyfin node
       resources:
         limits:
           cpus: '0.2'
@@ -106,6 +110,34 @@ services:
         reservations:
           cpus: '0.1'
           memory: 64M
+
+  # Optional: Lightweight monitoring for metal0 only if needed
+  metricbeat-jellyfin-node:
+    image: docker.elastic.co/beats/metricbeat:8.15.1
+    user: root
+    command: metricbeat -e -strict.perms=false
+    volumes:
+      - ./elk/metricbeat-minimal.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+    networks:
+      - monitor
+    depends_on:
+      - elasticsearch
+    deploy:
+      replicas: 0  # Disabled by default - enable only if needed
+      placement:
+        constraints:
+          - node.hostname == metal0
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+        reservations:
+          cpus: '0.05'
+          memory: 32M
 
   elastalert:
     image: jertel/elastalert2:latest

@@ -1,0 +1,23 @@
+name: High Memory Usage Alert
+type: frequency
+index: metricbeat-*
+num_events: 1
+timeframe:
+  minutes: 5
+filter:
+- range:
+    system.memory.used.pct:
+      gt: 0.9
+alert:
+- "email"
+email:
+- "admin@cluster.cooked.beer"
+alert_subject: "High Memory Usage on {0}"
+alert_subject_args:
+- "host.name"
+alert_text: |
+  Memory usage is above 90% on host {0}
+  Current usage: {1}%
+alert_text_args:
+- "host.name"
+- "system.memory.used.pct"

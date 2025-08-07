@@ -30,8 +30,9 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - xpack.security.enabled=false
       - NODE_OPTIONS=--max-old-space-size=1536
-    volumes:
-      - ./elk/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5601
+      - LOGGING_ROOT_LEVEL=warn
     ports:
       - "5601:5601"
     networks:
@@ -58,9 +59,41 @@ services:
   metricbeat:
     image: docker.elastic.co/beats/metricbeat:8.15.1
     user: root
-    command: metricbeat -e -strict.perms=false
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - KIBANA_HOST=kibana:5601
+    command: >
+      bash -c "
+      cat > /usr/share/metricbeat/metricbeat.yml <<EOF
+      metricbeat.modules:
+      - module: system
+        metricsets: [cpu, load, memory, network, process, process_summary, socket_summary, filesystem, diskio]
+        enabled: true
+        period: 10s
+        processes: ['.*']
+        cpu.metrics: [percentages, normalized_percentages]
+        core.metrics: [percentages]
+      - module: docker
+        metricsets: [container, cpu, diskio, healthcheck, info, memory, network]
+        hosts: [unix:///var/run/docker.sock]
+        period: 10s
+        enabled: true
+      processors:
+      - add_host_metadata:
+          when.not.contains.tags: forwarded
+      - add_docker_metadata: ~
+      output.elasticsearch:
+        hosts: ['elasticsearch:9200']
+      setup.template.settings:
+        index.number_of_shards: 1
+        index.codec: best_compression
+      setup.kibana:
+        host: kibana:5601
+      logging.level: info
+      EOF
+      metricbeat -e -strict.perms=false
+      "
     volumes:
-      - ./elk/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
       - /proc:/hostfs/proc:ro
@@ -85,9 +118,34 @@ services:
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.15.1
     user: root
-    command: filebeat -e -strict.perms=false
+    environment:
+      - ELASTICSEARCH_HOSTS=elasticsearch:9200
+      - KIBANA_HOST=kibana:5601
+    command: >
+      bash -c "
+      cat > /usr/share/filebeat/filebeat.yml <<EOF
+      filebeat.inputs:
+      - type: container
+        paths:
+          - '/var/lib/docker/containers/*/*.log'
+        processors:
+        - add_docker_metadata:
+            host: unix:///var/run/docker.sock
+      processors:
+      - add_host_metadata:
+          when.not.contains.tags: forwarded
+      output.elasticsearch:
+        hosts: ['elasticsearch:9200']
+      setup.template.settings:
+        index.number_of_shards: 1
+        index.codec: best_compression
+      setup.kibana:
+        host: kibana:5601
+      logging.level: info
+      EOF
+      filebeat -e -strict.perms=false
+      "
     volumes:
-      - ./elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:

@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: elasticsearch:7.17.15
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - elk
+    deploy:
+      placement:
+        constraints: [node.hostname != metal0]  # Keep off Jellyfin node
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '1.0'
+          memory: 1024M
+
+  kibana:
+    image: kibana:7.17.15
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    deploy:
+      placement:
+        constraints: [node.hostname != metal0]  # Keep off Jellyfin node
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.kibana.rule=Host(`cluster.cooked.beer`)"
+        - "traefik.http.routers.kibana.entrypoints=websecure"
+        - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+        - "traefik.http.routers.kibana.tls.certresolver=myresolver"
+        - "traefik.docker.network=elk"
+
+  logstash:
+    image: logstash:7.17.15
+    ports:
+      - "12201:12201/udp"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+    volumes:
+      - logstash-pipeline:/usr/share/logstash/pipeline/
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Optional: Metricbeat for system metrics (lightweight)
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:7.17.15
+    user: root
+    command: metricbeat -e -strict.perms=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+      - metricbeat-config:/usr/share/metricbeat/metricbeat.yml:ro
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+          - node.hostname != metal0  # Exclude Jellyfin node
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+volumes:
+  esdata:
+    driver: local
+  logstash-pipeline:
+    driver: local
+  metricbeat-config:
+    driver: local
+
+networks:
+  elk:
+    driver: overlay
+    attachable: true

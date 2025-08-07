@@ -1,0 +1,50 @@
+# Kibana configuration for optimized performance
+server.host: "0.0.0.0"
+server.port: 5601
+server.name: "kibana"
+
+# Elasticsearch configuration
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.requestTimeout: 90000
+elasticsearch.shardTimeout: 30000
+
+# Performance optimizations
+server.maxPayload: 1048576
+server.keepaliveTimeout: 120000
+server.socketTimeout: 120000
+
+# Memory and performance settings
+logging.appenders.default:
+  type: console
+  layout:
+    type: json
+logging.root.level: warn
+
+# Reduce memory usage by limiting concurrent requests
+server.compression.enabled: true
+server.compression.referrerWhitelist: ["*"]
+
+# Optimize for smaller datasets
+data.search.aggs.shardDelay.enabled: false
+data.search.sessions.enabled: false
+
+# Disable unnecessary features to save memory
+xpack.security.enabled: false
+xpack.encryptedSavedObjects.enabled: false
+xpack.reporting.enabled: false
+xpack.canvas.enabled: false
+xpack.maps.enabled: false
+xpack.ml.enabled: false
+xpack.apm.enabled: false
+xpack.uptime.enabled: false
+xpack.infra.enabled: true
+xpack.logs.enabled: true
+xpack.monitoring.enabled: false
+
+# Optimize index patterns and saved objects
+savedObjects.maxImportPayloadBytes: 26214400
+savedObjects.maxImportExportSize: 10000
+
+# Set reasonable timeouts
+elasticsearch.pingTimeout: 1500
+elasticsearch.requestHeadersWhitelist: ["authorization"]

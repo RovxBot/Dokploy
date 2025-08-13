@@ -21,14 +21,14 @@ services:
       DIUN_NOTIF_WEBHOOK_TEMPLATEBODY: |
         {
           "title": "Docker Update Available",
-          "service": "{{.Entry.Image.Path}}",
-          "registry": "{{.Entry.Image.Domain}}",
-          "currentVersion": "{{.Entry.Image.Tag}}",
-          "latestVersion": "{{.Entry.Manifest.Tag}}",
-          "releaseDate": "{{.Entry.Image.Created | date \"2006-01-02 15:04:05\"}}",
-          "dockerHubUrl": "https://hub.docker.com/r/{{.Entry.Image.Path}}",
-          "fullImageName": "{{.Entry.Image.Domain}}/{{.Entry.Image.Path}}:{{.Entry.Manifest.Tag}}",
-          "timestamp": "{{now | date \"2006-01-02 15:04:05\"}}",
+          "service": "$${.Entry.Image.Path}",
+          "registry": "$${.Entry.Image.Domain}",
+          "currentVersion": "$${.Entry.Image.Tag}",
+          "latestVersion": "$${.Entry.Manifest.Tag}",
+          "releaseDate": "$${.Entry.Image.Created | date \"2006-01-02 15:04:05\"}",
+          "dockerHubUrl": "https://hub.docker.com/r/$${.Entry.Image.Path}",
+          "fullImageName": "$${.Entry.Image.Domain}/$${.Entry.Image.Path}:$${.Entry.Manifest.Tag}",
+          "timestamp": "$${now | date \"2006-01-02 15:04:05\"}",
           "updateAvailable": true,
           "severity": "info"
         }

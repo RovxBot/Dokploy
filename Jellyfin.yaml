@@ -10,11 +10,9 @@ services:
       - type: bind
         source: ${BIND1SOURCE}
         target: ${BIND1TARGET}
-        read_only: true
       - type: bind
         source: ${BIND2SOURCE}
         target: ${BIND2TARGET}
-        read_only: true
     environment:
       - JELLYFIN_PublishedServerUrl=${PUBLISHED}
       - JELLYFIN_NETWORK_BIND_ADDRESS=127.0.0.1

@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  # DIUN - Docker Image Update Notifier optimized for Power Automate
+  diun:
+    image: crazymax/diun:latest
+    environment:
+      TZ: "Australia/Adelaide"
+      LOG_LEVEL: "info"
+      LOG_JSON: "false"
+      DIUN_WATCH_WORKERS: "20"
+      DIUN_WATCH_SCHEDULE: "0 9 * * 0"  # Sunday 9 AM
+      DIUN_WATCH_JITTER: "30s"
+      # Providers
+      DIUN_PROVIDERS_SWARM: "true"
+      DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT: "false"
+      # Notifications - Power Automate Webhook
+      DIUN_NOTIF_WEBHOOK_ENDPOINT: "${WEBHOOK_URL}"
+      DIUN_NOTIF_WEBHOOK_METHOD: "POST"
+      DIUN_NOTIF_WEBHOOK_HEADERS_CONTENT-TYPE: "application/json"
+      DIUN_NOTIF_WEBHOOK_TEMPLATEBODY: |
+        {
+          "title": "Docker Update Available",
+          "service": "{{.Entry.Image.Path}}",
+          "registry": "{{.Entry.Image.Domain}}",
+          "currentVersion": "{{.Entry.Image.Tag}}",
+          "latestVersion": "{{.Entry.Manifest.Tag}}",
+          "releaseDate": "{{.Entry.Image.Created | date \"2006-01-02 15:04:05\"}}",
+          "dockerHubUrl": "https://hub.docker.com/r/{{.Entry.Image.Path}}",
+          "fullImageName": "{{.Entry.Image.Domain}}/{{.Entry.Image.Path}}:{{.Entry.Manifest.Tag}}",
+          "timestamp": "{{now | date \"2006-01-02 15:04:05\"}}",
+          "updateAvailable": true,
+          "severity": "info"
+        }
+      # Email notifications (backup)
+      DIUN_NOTIF_MAIL_HOST: "${SMTP_HOST}"
+      DIUN_NOTIF_MAIL_PORT: "${SMTP_PORT}"
+      DIUN_NOTIF_MAIL_SSL: "true"
+      DIUN_NOTIF_MAIL_USERNAME: "${SMTP_USER}"
+      DIUN_NOTIF_MAIL_PASSWORD: "${SMTP_PASS}"
+      DIUN_NOTIF_MAIL_FROM: "${EMAIL_FROM}"
+      DIUN_NOTIF_MAIL_TO: "${EMAIL_TO}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - diun-data:/data
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+volumes:
+  diun-data:
+
+networks:
+  dokploy-network:
+    external: true

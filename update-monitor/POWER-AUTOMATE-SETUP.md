@@ -20,21 +20,20 @@ https://default345cd18b5bee4ac4b729a3f7059a28.f3.environment.api.powerplatform.c
 
 ## 🔧 JSON Payload Structure
 
-Your Power Automate workflow will receive this JSON structure for each update:
+Your Power Automate workflow will receive DIUN's default JSON structure for each update:
 
 ```json
 {
-  "title": "Docker Update Available",
-  "service": "linuxserver/sonarr",
-  "registry": "lscr.io",
-  "currentVersion": "latest",
-  "latestVersion": "4.0.0.748",
-  "releaseDate": "2024-01-15 10:30:00",
-  "dockerHubUrl": "https://hub.docker.com/r/linuxserver/sonarr",
-  "fullImageName": "lscr.io/linuxserver/sonarr:4.0.0.748",
-  "timestamp": "2024-01-21 09:00:00",
-  "updateAvailable": true,
-  "severity": "info"
+  "diun_version": "4.29.0",
+  "hostname": "docker-node",
+  "status": "new",
+  "provider": "swarm",
+  "image": "lscr.io/linuxserver/sonarr:latest",
+  "hub_link": "https://hub.docker.com/r/linuxserver/sonarr",
+  "mime_type": "application/vnd.docker.distribution.manifest.v2+json",
+  "digest": "sha256:abc123...",
+  "created": "2024-01-15T10:30:00Z",
+  "platform": "linux/amd64"
 }
 ```
 
@@ -88,12 +87,12 @@ When HTTP request is received
 Post message in a chat or channel
 - Team: Your Team
 - Channel: Your Channel  
-- Message: 
+- Message:
 🔄 **Docker Update Available**
-📦 Service: @{triggerBody()?['service']}
-🏷️ Current: @{triggerBody()?['currentVersion']}
-🆕 Latest: @{triggerBody()?['latestVersion']}
-🕐 Released: @{triggerBody()?['releaseDate']}
+📦 Image: @{triggerBody()?['image']}
+🔗 Hub Link: @{triggerBody()?['hub_link']}
+🕐 Created: @{triggerBody()?['created']}
+📋 Status: @{triggerBody()?['status']}
 ```
 
 ### Advanced Adaptive Card

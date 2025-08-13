@@ -14,32 +14,10 @@ services:
       # Providers
       DIUN_PROVIDERS_SWARM: "true"
       DIUN_PROVIDERS_SWARM_WATCHBYDEFAULT: "false"
-      # Notifications - Power Automate Webhook
+      # Notifications - Power Automate Webhook (using default format)
       DIUN_NOTIF_WEBHOOK_ENDPOINT: "${WEBHOOK_URL}"
       DIUN_NOTIF_WEBHOOK_METHOD: "POST"
       DIUN_NOTIF_WEBHOOK_HEADERS_CONTENT-TYPE: "application/json"
-      DIUN_NOTIF_WEBHOOK_TEMPLATE: |
-        {
-          "title": "Docker Update Available",
-          "service": "$${.Entry.Image.Path}",
-          "registry": "$${.Entry.Image.Domain}",
-          "currentVersion": "$${.Entry.Image.Tag}",
-          "latestVersion": "$${.Entry.Manifest.Tag}",
-          "releaseDate": "$${.Entry.Image.Created | date \"2006-01-02 15:04:05\"}",
-          "dockerHubUrl": "https://hub.docker.com/r/$${.Entry.Image.Path}",
-          "fullImageName": "$${.Entry.Image.Domain}/$${.Entry.Image.Path}:$${.Entry.Manifest.Tag}",
-          "timestamp": "$${now | date \"2006-01-02 15:04:05\"}",
-          "updateAvailable": true,
-          "severity": "info"
-        }
-      # Email notifications (backup)
-      DIUN_NOTIF_MAIL_HOST: "${SMTP_HOST}"
-      DIUN_NOTIF_MAIL_PORT: "${SMTP_PORT}"
-      DIUN_NOTIF_MAIL_SSL: "true"
-      DIUN_NOTIF_MAIL_USERNAME: "${SMTP_USER}"
-      DIUN_NOTIF_MAIL_PASSWORD: "${SMTP_PASS}"
-      DIUN_NOTIF_MAIL_FROM: "${EMAIL_FROM}"
-      DIUN_NOTIF_MAIL_TO: "${EMAIL_TO}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - diun-data:/data

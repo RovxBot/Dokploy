@@ -18,7 +18,7 @@ services:
       DIUN_NOTIF_WEBHOOK_ENDPOINT: "${WEBHOOK_URL}"
       DIUN_NOTIF_WEBHOOK_METHOD: "POST"
       DIUN_NOTIF_WEBHOOK_HEADERS_CONTENT-TYPE: "application/json"
-      DIUN_NOTIF_WEBHOOK_TEMPLATEBODY: |
+      DIUN_NOTIF_WEBHOOK_TEMPLATE: |
         {
           "title": "Docker Update Available",
           "service": "$${.Entry.Image.Path}",

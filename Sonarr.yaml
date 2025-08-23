@@ -8,9 +8,8 @@ services:
       - PGID=1000
       - TZ=Australia/Adelaide
     volumes:
-      - /srv/appdata/sonarr/config:/config
-      # Uncomment and adjust these if needed:
-      - "/srv/media/plex/TV shows:/tv"
+      - sonarr_config:/config                # named volume, created from driver_opts below
+      - "/srv/media/plex/TV shows:/tv"      # keep media binds as-is
       - /srv/media/plex/Downloads:/downloads
     networks:
       - dokploy-network
@@ -23,6 +22,14 @@ services:
         - "traefik.http.routers.sonarr.tls=false"
         - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  sonarr_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/appdata/sonarr/config    # <- your existing host path (on metal2)
 
 networks:
   dokploy-network:

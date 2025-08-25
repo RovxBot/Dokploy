@@ -10,7 +10,7 @@ services:
       - HOST_WHITELIST=${HOST}
     volumes:
       - sabnzbd_config_v2:/config
-      - downloads_v3:/downloads
+      - downloads_v4:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -31,7 +31,7 @@ volumes:
       o: "addr=192.168.1.184,nfsvers=4.1,rw"
       device: ":/export/appdata/sabnzbd/config"
 
-  downloads_v3:
+  downloads_v4:
     driver: local
     driver_opts:
       type: "nfs"

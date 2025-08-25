@@ -7,7 +7,7 @@ services:
       - LOG_LEVEL=debug
       - TZ=${TZ}
     volumes:
-      - /srv/appdata/jellyseerr/config:/app/config
+      - jellyseerr_config_v1:/app/config
     networks:
       - dokploy-network
     deploy:
@@ -20,7 +20,14 @@ services:
         - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
         - "traefik.docker.network=dokploy-network"
 
+volumes:
+  jellyseerr_config_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/jellyseerr/config"
+
 networks:
   dokploy-network:
     external: true
-     

@@ -10,7 +10,7 @@ services:
       - INVITATIONS_ALLOWED=true
       - DOMAIN=https://${DOMAIN}
     volumes:
-      - ${VOLUME}
+      - vaultwarden_data_v1:/data
     networks:
       - dokploy-network
     deploy:
@@ -22,6 +22,14 @@ services:
         - "traefik.http.routers.vaultwarden.tls=false"
         - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  vaultwarden_data_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/vaultwarden"
 
 networks:
   dokploy-network:

@@ -3,23 +3,14 @@ version: "3.8"
 services:
   jellyfin:
     image: jellyfin/jellyfin
-    network_mode: host
+    network_mode: host   # Jellyfin usually needs host networking for DLNA/UPnP
     volumes:
-      - ${VOLUME1}
-      - ${VOLUME2}
-      - type: bind
-        source: ${BIND1SOURCE}
-        target: ${BIND1TARGET}
-      - type: bind
-        source: ${BIND2SOURCE}
-        target: ${BIND2TARGET}
+      - jellyfin_config_v1:/config
+      - jellyfin_cache_v1:/cache
+      - plex_media_v1:/media/plex
+      - emby_media_v1:/media/emby
     environment:
-      - JELLYFIN_PublishedServerUrl=${PUBLISHED}
-      - JELLYFIN_NETWORK_BIND_ADDRESS=127.0.0.1
-      - JELLYFIN_DATA_DIR=/config
-      - JELLYFIN_CONFIG_DIR=/config
-      - JELLYFIN_LOG_DIR=/config/log
-      - JELLYFIN_CACHE_DIR=/cache
+      - JELLYFIN_PublishedServerUrl=https://metal0.risk-lenok.ts.net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
@@ -27,3 +18,36 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+
+volumes:
+  # Config
+  jellyfin_config_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/jellyfin/config"
+
+  # Cache
+  jellyfin_cache_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/jellyfin/cache"
+
+  # Plex Media (share root → use subdirs inside container)
+  plex_media_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.154,nfsvers=3,rw"
+      device: ":/volume1/Plex Media"
+
+  # Emby Media
+  emby_media_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.153,nfsvers=3,rw"
+      device: ":/volume1/emby_media"

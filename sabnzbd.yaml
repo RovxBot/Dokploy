@@ -9,7 +9,8 @@ services:
       - TZ=Australia/Adelaide
       - HOST_WHITELIST=${HOST}
     volumes:
-      - /srv/appdata/sabnzbd/config:/config
+      - sabnzbd_config_v1:/config
+      - downloads_v3:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -21,6 +22,22 @@ services:
         - "traefik.http.routers.sabnzbd.tls=false"
         - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  sabnzbd_config_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184, nfsvers=4.1, rw"
+      device: ":/export/appdata/sabnzbd/config"
+
+  # Share root; inside the container you'll use /downloads/Downloads (and /downloads/Downloads/Done if you like)
+  downloads_v3:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.154, vers=3, rw"
+      device: ":/volume1/Plex Media"
 
 networks:
   dokploy-network:

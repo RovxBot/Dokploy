@@ -9,8 +9,8 @@ services:
       - TZ=Australia/Adelaide
     volumes:
       - sonarr_config_v2:/config
-      - tv_shows_v1:/tv
-      - downloads_v1:/downloads
+      - tv_shows_v2:/tv
+      - downloads_v2:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -36,14 +36,14 @@ volumes:
     driver_opts:
       type: "nfs"
       o: "addr=192.168.1.154,vers=3,rw"
-      device: ":/volume1/Plex Media"   # share root; /tv will contain "TV Shows"
+      device: ":/volume1/Plex Media/TV Shows"   # share root; /tv will contain "TV Shows"
 
   downloads_v1:
     driver: local
     driver_opts:
       type: "nfs"
       o: "addr=192.168.1.154,vers=3,rw"
-      device: ":/volume1/Plex Media"   # share root; /downloads will contain "Downloads"
+      device: ":/volume1/Plex Media/Downloads"   # share root; /downloads will contain "Downloads"
 
 networks:
   dokploy-network:

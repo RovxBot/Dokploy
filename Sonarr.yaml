@@ -28,7 +28,7 @@ volumes:
     driver: local
     driver_opts:
       type: "nfs"
-      o: "addr=192.168.1.184,nfsvers=4.2,rw,_netdev,noatime,hard,timeo=600,retrans=2,rsize=1048576,wsize=1048576,nconnect=4"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
       device: ":/export/appdata/sonarr/config"
 
 networks:

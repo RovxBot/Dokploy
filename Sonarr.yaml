@@ -9,8 +9,8 @@ services:
       - TZ=Australia/Adelaide
     volumes:
       - sonarr_config_v2:/config
-      - tv_shows_v2:/tv
-      - downloads_v2:/downloads
+      - tv_shows_v3:/tv
+      - downloads_v3:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -31,19 +31,19 @@ volumes:
       o: "addr=192.168.1.184,nfsvers=4.1,rw"
       device: ":/export/appdata/sonarr/config"
 
-  tv_shows_v2:
+  tv_shows_v3:                     # NEW name to force fresh creation
     driver: local
     driver_opts:
       type: "nfs"
       o: "addr=192.168.1.154,vers=3,rw"
-      device: ":/volume1/Plex Media/TV Shows"
+      device: ":/volume1/Plex Media"
 
-  downloads_v2:
+  downloads_v3:                    # NEW name to force fresh creation
     driver: local
     driver_opts:
       type: "nfs"
       o: "addr=192.168.1.154,vers=3,rw"
-      device: ":/volume1/Plex Media/Downloads"
+      device: ":/volume1/Plex Media"
 
 networks:
   dokploy-network:

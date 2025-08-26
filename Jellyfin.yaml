@@ -2,15 +2,25 @@ version: "3.8"
 
 services:
   jellyfin:
-    image: jellyfin/jellyfin
-    network_mode: host   # Jellyfin usually needs host networking for DLNA/UPnP
-    volumes:
-      - jellyfin_config_v1:/config
-      - jellyfin_cache_v1:/cache
-      - plex_media_v1:/media/plex
-      - emby_media_v1:/media/emby
+    image: jellyfin/jellyfin:latest
+    network_mode: host
     environment:
       - JELLYFIN_PublishedServerUrl=https://metal0.risk-lenok.ts.net
+      - TZ=Australia/Adelaide
+    volumes:
+      - jellyfin_config_v2:/config                 # NFS (Rockstor)
+      - jellyfin_cache_v2:/cache                   # NFS (Rockstor)
+      - jellyfin_db_local:/config/data             # LOCAL tiny DB overlay (fixes locks)
+      - type: tmpfs                                # super fast transcode scratch
+        target: /transcode
+        tmpfs:
+          size: 8g
+      - plex_media_v1:/media/plex                  # NAS #2 share root
+      - emby_media_v1:/media/emby                  # NAS #1 share root
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == metal0                # keep Jellyfin on metal0
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
@@ -20,34 +30,40 @@ services:
       start_period: 60s
 
 volumes:
-  # Config
-  jellyfin_config_v1:
+  # Rockstor (config + cache)
+  jellyfin_config_v2:
     driver: local
     driver_opts:
-      type: "nfs"
-      o: "addr=192.168.1.184,nfsvers=4.1,rw"
-      device: ":/export/appdata/jellyfin/config"
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/jellyfin/config
 
-  # Cache
-  jellyfin_cache_v1:
+  jellyfin_cache_v2:
     driver: local
     driver_opts:
-      type: "nfs"
-      o: "addr=192.168.1.184,nfsvers=4.1,rw"
-      device: ":/export/appdata/jellyfin/cache"
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/jellyfin/cache
 
-  # Plex Media (share root → use subdirs inside container)
+  # LOCAL ONLY (on metal0) – tiny footprint, solves SQLite locks
+  jellyfin_db_local:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/jellyfin-db
+
+  # Media (Synology shares)
   plex_media_v1:
     driver: local
     driver_opts:
-      type: "nfs"
-      o: "addr=192.168.1.154,nfsvers=3,rw"
+      type: nfs
+      o: addr=192.168.1.154,nfsvers=3,rw
       device: ":/volume1/Plex Media"
 
-  # Emby Media
   emby_media_v1:
     driver: local
     driver_opts:
-      type: "nfs"
-      o: "addr=192.168.1.153,nfsvers=3,rw"
-      device: ":/volume1/emby_media"
+      type: nfs
+      o: addr=192.168.1.153,nfsvers=3,rw
+      device: :/volume1/emby_media

@@ -3,7 +3,11 @@ version: "3.8"
 services:
   jellyfin:
     image: jellyfin/jellyfin:latest
-    network_mode: host
+    ports:
+      - target: 8096
+        published: 8096
+        protocol: tcp
+        mode: host
     environment:
       - JELLYFIN_PublishedServerUrl=http://192.168.1.190:8096
       - TZ=Australia/Adelaide

@@ -5,7 +5,7 @@ services:
     image: jellyfin/jellyfin:latest
     network_mode: host
     environment:
-      - JELLYFIN_PublishedServerUrl=https://metal0.risk-lenok.ts.net
+      - JELLYFIN_PublishedServerUrl=http://192.168.1.190:8096
       - TZ=Australia/Adelaide
     volumes:
       - jellyfin_config_v2:/config                 # NFS (Rockstor)

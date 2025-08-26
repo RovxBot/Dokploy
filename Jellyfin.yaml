@@ -14,13 +14,14 @@ services:
       - type: tmpfs                                # super fast transcode scratch
         target: /transcode
         tmpfs:
-          size: 8g
+          size: 8589934592                         # 8 GiB in bytes
+          mode: 1777
       - plex_media_v1:/media/plex                  # NAS #2 share root
       - emby_media_v1:/media/emby                  # NAS #1 share root
     deploy:
       placement:
         constraints:
-          - node.hostname == metal0                # keep Jellyfin on metal0
+          - node.labels.jellyfin == 1                # keep Jellyfin on metal0
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8096/health"]

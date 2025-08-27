@@ -4,7 +4,7 @@ services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     networks:
-      - dokploy-network
+      - hostnet
     environment:
       - TZ=Australia/Adelaide
     volumes:

@@ -50,18 +50,19 @@ services:
       - /bin/sh
       - -lc
       - |
-        # Force a sane default even if Dokploy set an empty var
+        # Debug what we're starting with
+        echo "DEBUG: Initial HA_UPSTREAM value: '${HA_UPSTREAM}'"
+        echo "DEBUG: Initial HA_UPSTREAM length: ${#HA_UPSTREAM}"
+
+        # Clean any whitespace and force a sane default
+        HA_UPSTREAM=$(echo "$HA_UPSTREAM" | tr -d '[:space:]')
+
         if [ -z "$HA_UPSTREAM" ]; then
-          export HA_UPSTREAM=192.168.1.194:8123
+          HA_UPSTREAM=192.168.1.194:8123
         fi
 
+        export HA_UPSTREAM
         echo "Using HA_UPSTREAM=${HA_UPSTREAM}"
-
-        # Validate that HA_UPSTREAM is not empty before proceeding
-        if [ -z "$HA_UPSTREAM" ]; then
-          echo "ERROR: HA_UPSTREAM is still empty after fallback!"
-          exit 1
-        fi
 
         cat >/etc/nginx/conf.d/default.conf <<EOF
         upstream homeassistant {

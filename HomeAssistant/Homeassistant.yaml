@@ -51,13 +51,21 @@ services:
       - -lc
       - |
         # Force a sane default even if Dokploy set an empty var
-        if [ -z "$HA_UPSTREAM" ]; then HA_UPSTREAM=192.168.1.194:8123; fi
+        if [ -z "$HA_UPSTREAM" ]; then
+          export HA_UPSTREAM=192.168.1.194:8123
+        fi
 
         echo "Using HA_UPSTREAM=${HA_UPSTREAM}"
 
+        # Validate that HA_UPSTREAM is not empty before proceeding
+        if [ -z "$HA_UPSTREAM" ]; then
+          echo "ERROR: HA_UPSTREAM is still empty after fallback!"
+          exit 1
+        fi
+
         cat >/etc/nginx/conf.d/default.conf <<EOF
         upstream homeassistant {
-          server ${HA_UPSTREAM};
+          server $HA_UPSTREAM;
         }
 
         server {
@@ -82,6 +90,9 @@ services:
           }
         }
         EOF
+
+        echo "Generated nginx config:"
+        cat /etc/nginx/conf.d/default.conf
 
         exec nginx -g 'daemon off;'
 

@@ -54,37 +54,42 @@ services:
         echo "DEBUG: Initial HA_UPSTREAM value: '${HA_UPSTREAM}'"
 
         # Set the upstream server - use environment variable or fallback
-        UPSTREAM_SERVER="${HA_UPSTREAM:-192.168.1.194:8123}"
+        if [ -z "$HA_UPSTREAM" ]; then
+          UPSTREAM_SERVER="192.168.1.194:8123"
+        else
+          UPSTREAM_SERVER="$HA_UPSTREAM"
+        fi
 
+        echo "DEBUG: UPSTREAM_SERVER set to: ${UPSTREAM_SERVER}"
         echo "Using UPSTREAM_SERVER=${UPSTREAM_SERVER}"
 
-        cat >/etc/nginx/conf.d/default.conf <<EOF
-        upstream homeassistant {
-          server ${UPSTREAM_SERVER};
-        }
+        # Build nginx config without HERE document to avoid variable expansion issues
+        echo "upstream homeassistant {" > /etc/nginx/conf.d/default.conf
+        echo "  server ${UPSTREAM_SERVER};" >> /etc/nginx/conf.d/default.conf
+        echo "}" >> /etc/nginx/conf.d/default.conf
+        echo "" >> /etc/nginx/conf.d/default.conf
 
-        server {
-          listen 8080;
-
-          location / {
-            proxy_pass http://homeassistant;
-            proxy_http_version 1.1;
-
-            # Preserve client info
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-
-            # WebSocket headers
-            proxy_set_header Upgrade \$http_upgrade;
-            proxy_set_header Connection "upgrade";
-
-            proxy_read_timeout 3600s;
-            proxy_send_timeout 3600s;
-          }
-        }
-        EOF
+        echo "server {" >> /etc/nginx/conf.d/default.conf
+        echo "  listen 8080;" >> /etc/nginx/conf.d/default.conf
+        echo "" >> /etc/nginx/conf.d/default.conf
+        echo "  location / {" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_pass http://homeassistant;" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_http_version 1.1;" >> /etc/nginx/conf.d/default.conf
+        echo "" >> /etc/nginx/conf.d/default.conf
+        echo "    # Preserve client info" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_set_header Host \$host;" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_set_header X-Real-IP \$remote_addr;" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_set_header X-Forwarded-Proto \$scheme;" >> /etc/nginx/conf.d/default.conf
+        echo "" >> /etc/nginx/conf.d/default.conf
+        echo "    # WebSocket headers" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_set_header Upgrade \$http_upgrade;" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_set_header Connection \"upgrade\";" >> /etc/nginx/conf.d/default.conf
+        echo "" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_read_timeout 3600s;" >> /etc/nginx/conf.d/default.conf
+        echo "    proxy_send_timeout 3600s;" >> /etc/nginx/conf.d/default.conf
+        echo "  }" >> /etc/nginx/conf.d/default.conf
+        echo "}" >> /etc/nginx/conf.d/default.conf
 
         echo "Generated nginx config:"
         cat /etc/nginx/conf.d/default.conf

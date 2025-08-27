@@ -27,6 +27,50 @@ services:
       retries: 5
       start_period: 60s
 
+  # Service to create the nginx template
+  ha-nginx-template-creator:
+    image: alpine:latest
+    volumes:
+      - ha-nginx-template:/templates
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /templates/default.conf.template << 'EOF'
+        upstream homeassistant {
+          server ${HA_UPSTREAM};
+        }
+
+        server {
+          listen 8080;
+
+          location / {
+            proxy_pass http://homeassistant;
+            proxy_http_version 1.1;
+
+            # Preserve client info
+            proxy_set_header Host $$host;
+            proxy_set_header X-Real-IP $$remote_addr;
+            proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $$scheme;
+
+            # WebSocket headers
+            proxy_set_header Upgrade $$http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+          }
+        }
+        EOF
+        echo "Template created successfully"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
   ha-edge:
     image: nginx:alpine
     networks:
@@ -34,6 +78,10 @@ services:
     environment:
       # Override in Dokploy if you like; this is the fallback
       - HA_UPSTREAM=192.168.1.194:8123
+    volumes:
+      - ha-nginx-template:/etc/nginx/templates:ro
+    depends_on:
+      - ha-nginx-template-creator
     deploy:
       replicas: 1
       placement:
@@ -46,56 +94,6 @@ services:
         - "traefik.http.routers.ha.entrypoints=web"
         - "traefik.http.routers.ha.tls=false"
         - "traefik.http.services.ha.loadbalancer.server.port=8080"
-    command:
-      - /bin/sh
-      - -lc
-      - |
-        # Debug what we're starting with
-        echo "DEBUG: Initial HA_UPSTREAM value: '${HA_UPSTREAM}'"
-
-        # Just hardcode the fallback since variable assignment isn't working
-        echo "DEBUG: Using hardcoded fallback"
-
-        # Build nginx config with hardcoded upstream
-        echo "upstream homeassistant {" > /etc/nginx/conf.d/default.conf
-        if [ -z "$HA_UPSTREAM" ]; then
-          echo "  server 192.168.1.194:8123;" >> /etc/nginx/conf.d/default.conf
-          echo "Using hardcoded upstream: 192.168.1.194:8123"
-        else
-          echo "  server $HA_UPSTREAM;" >> /etc/nginx/conf.d/default.conf
-          echo "Using HA_UPSTREAM: $HA_UPSTREAM"
-        fi
-        echo "}" >> /etc/nginx/conf.d/default.conf
-        echo "" >> /etc/nginx/conf.d/default.conf
-
-        echo "server {" >> /etc/nginx/conf.d/default.conf
-        echo "  listen 8080;" >> /etc/nginx/conf.d/default.conf
-        echo "" >> /etc/nginx/conf.d/default.conf
-        echo "  location / {" >> /etc/nginx/conf.d/default.conf
-        echo "    proxy_pass http://homeassistant;" >> /etc/nginx/conf.d/default.conf
-        echo "    proxy_http_version 1.1;" >> /etc/nginx/conf.d/default.conf
-        echo "" >> /etc/nginx/conf.d/default.conf
-        echo "    # Preserve client info" >> /etc/nginx/conf.d/default.conf
-        cat >> /etc/nginx/conf.d/default.conf << 'HEADERS'
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket headers
-        proxy_set_header Upgrade $http_upgrade;
-        HEADERS
-        echo "    proxy_set_header Connection \"upgrade\";" >> /etc/nginx/conf.d/default.conf
-        echo "" >> /etc/nginx/conf.d/default.conf
-        echo "    proxy_read_timeout 3600s;" >> /etc/nginx/conf.d/default.conf
-        echo "    proxy_send_timeout 3600s;" >> /etc/nginx/conf.d/default.conf
-        echo "  }" >> /etc/nginx/conf.d/default.conf
-        echo "}" >> /etc/nginx/conf.d/default.conf
-
-        echo "Generated nginx config:"
-        cat /etc/nginx/conf.d/default.conf
-
-        exec nginx -g 'daemon off;'
 
 volumes:
   ha_config_v1:
@@ -104,6 +102,9 @@ volumes:
       type: nfs
       o: addr=192.168.1.184,nfsvers=4.1,rw
       device: :/export/appdata/homeassistant/config
+
+  ha-nginx-template:
+    driver: local
 
 networks:
   dokploy-network:

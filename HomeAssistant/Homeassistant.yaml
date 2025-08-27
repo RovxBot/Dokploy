@@ -3,7 +3,8 @@ version: "3.8"
 services:
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
-    network_mode: host
+    networks:
+      - dokploy-network
     environment:
       - TZ=Australia/Adelaide
     volumes:

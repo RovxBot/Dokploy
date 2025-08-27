@@ -8,6 +8,7 @@ services:
     volumes:
       - plex_media_v1:/media/plex                 # Synology share root mounted here
       - /etc/localtime:/etc/localtime:ro
+      - immich_uploads_v1:/usr/src/app/upload   # mount Synology /images here (Immich expects this)
     env_file:
       - .env
     depends_on:
@@ -49,7 +50,9 @@ services:
   redis:
     image: docker.io/valkey/valkey:8-bookworm@sha256:facc1d2c3462975c34e10fccb167bfa92b0e0dbd992fc282c29a61c3243afb11
     networks:
-      - dokploy-network
+      dokploy-network:
+        aliases:
+          - redis
     deploy:
       restart_policy:
         condition: on-failure
@@ -79,6 +82,13 @@ services:
           - node.labels.immichdb == 1               # pin DB to metal2
 
 volumes:
+  immich_uploads_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.154,vers=3,rw
+      device: ":/volume1/Plex Media/images"
+
   # Rockstor model cache
   immich_model_cache_v1:
     driver: local

@@ -53,19 +53,18 @@ services:
         # Debug what we're starting with
         echo "DEBUG: Initial HA_UPSTREAM value: '${HA_UPSTREAM}'"
 
-        # Set the upstream server - use environment variable or fallback
-        if [ -z "$HA_UPSTREAM" ]; then
-          UPSTREAM_SERVER="192.168.1.194:8123"
-        else
-          UPSTREAM_SERVER="$HA_UPSTREAM"
-        fi
+        # Just hardcode the fallback since variable assignment isn't working
+        echo "DEBUG: Using hardcoded fallback"
 
-        echo "DEBUG: UPSTREAM_SERVER set to: ${UPSTREAM_SERVER}"
-        echo "Using UPSTREAM_SERVER=${UPSTREAM_SERVER}"
-
-        # Build nginx config without HERE document to avoid variable expansion issues
+        # Build nginx config with hardcoded upstream
         echo "upstream homeassistant {" > /etc/nginx/conf.d/default.conf
-        echo "  server ${UPSTREAM_SERVER};" >> /etc/nginx/conf.d/default.conf
+        if [ -z "$HA_UPSTREAM" ]; then
+          echo "  server 192.168.1.194:8123;" >> /etc/nginx/conf.d/default.conf
+          echo "Using hardcoded upstream: 192.168.1.194:8123"
+        else
+          echo "  server $HA_UPSTREAM;" >> /etc/nginx/conf.d/default.conf
+          echo "Using HA_UPSTREAM: $HA_UPSTREAM"
+        fi
         echo "}" >> /etc/nginx/conf.d/default.conf
         echo "" >> /etc/nginx/conf.d/default.conf
 

@@ -1,128 +1,136 @@
 version: "3.8"
 
 services:
-  duplicacy:
-    image: saspus/duplicacy-web:latest
+  # 1) Cron controller (runs on a manager)
+  swarm-cronjob:
+    image: ghcr.io/crazy-max/swarm-cronjob:latest
     environment:
-      # Basic Configuration
       - TZ=Australia/Adelaide
-      - PUID=1000
-      - PGID=1000
-      
-      # Duplicacy Web UI Configuration
-      - DWE_MACHINE_ID=${MACHINE_ID:-dokploy-cluster}
-      - DWE_LISTEN_IP=0.0.0.0
-      - DWE_LISTEN_PORT=3875
-      
-      # Optional: Set admin password (if not set, will use default)
-      - DWE_PASSWORD=${ADMIN_PASSWORD:-}
-      
-      # Storage Backend Configuration (choose one)
-      # For local storage (NFS mount)
-      - STORAGE_TYPE=${STORAGE_TYPE:-local}
-      
-      # For cloud storage (uncomment and configure as needed)
-      # AWS S3
-      # - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      # - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      # - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
-      
-      # Google Cloud Storage
-      # - GOOGLE_APPLICATION_CREDENTIALS=/config/gcs-key.json
-      
-      # Azure Blob Storage
-      # - AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT}
-      # - AZURE_STORAGE_KEY=${AZURE_STORAGE_KEY}
-      
-      # Backblaze B2
-      # - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
-      # - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
-      
-      # SFTP
-      # - SFTP_HOST=${SFTP_HOST}
-      # - SFTP_USER=${SFTP_USER}
-      # - SFTP_PASSWORD=${SFTP_PASSWORD}
-      # - SFTP_PORT=${SFTP_PORT:-22}
-      
+      - LOG_LEVEL=info
     volumes:
-      # Duplicacy configuration and cache
-      - /srv/appdata/duplicacy/config:/config
-      - /srv/appdata/duplicacy/cache:/cache
-      - /srv/appdata/duplicacy/logs:/logs
-      
-      # Local backup storage (if using local storage)
-      - /srv/backups/duplicacy:/storage
-      
-      # Data to backup - mount all your important app data
-      - /srv/appdata:/data/appdata:ro
-      - /srv/media:/data/media:ro
-      
-      # Optional: Mount additional directories to backup
-      # - /srv/docker-configs:/data/docker-configs:ro
-      # - /home:/data/home:ro
-      
-      # For cloud storage credentials (if needed)
-      # - /srv/appdata/duplicacy/credentials:/credentials:ro
-      
-    networks:
-      - dokploy-network
-      
+      - /var/run/docker.sock:/var/run/docker.sock
     deploy:
+      mode: replicated
       replicas: 1
       placement:
         constraints:
-          # Run on manager node for consistency
           - node.role == manager
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.duplicacy.rule=Host(`duplicacy.cooked.beer`)"
-        - "traefik.http.routers.duplicacy.entrypoints=web"
-        - "traefik.http.routers.duplicacy.tls=false"
-        - "traefik.http.services.duplicacy.loadbalancer.server.port=3875"
-        - "traefik.docker.network=dokploy-network"
-        # Add monitoring labels
-        - "diun.enable=true"
-        - "update-monitor=true"
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-      restart_policy:
-        condition: on-failure
-        delay: 30s
-        max_attempts: 3
 
-  # Optional: Duplicacy CLI container for advanced operations
-  duplicacy-cli:
+  # 2) One-time initializer (scale to 1 once, then back to 0)
+  duplicacy-init:
     image: gilbertchen/duplicacy:latest
     environment:
       - TZ=Australia/Adelaide
-      - PUID=1000
-      - PGID=1000
+      # Backblaze + encryption (set these in Dokploy as env/secrets)
+      - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
+      - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
+      - DUPLICACY_PASSWORD=${DUPLICACY_PASSWORD}
+      - SNAPSHOT_ID=${SNAPSHOT_ID:-immich-uploads}
+      - B2_BUCKET=${B2_BUCKET}
+      - B2_PREFIX=${B2_PREFIX:-immich}
     volumes:
-      # Same volumes as web UI for consistency
-      - /srv/appdata/duplicacy/config:/config
-      - /srv/appdata/duplicacy/cache:/cache
-      - /srv/backups/duplicacy:/storage
-      - /srv/appdata:/data/appdata:ro
-      - /srv/media:/data/media:ro
-    networks:
-      - dokploy-network
+      - duplicacy_config_v1:/config         # preferences live here
+      - duplicacy_cache_v1:/cache
+      - duplicacy_logs_v1:/logs
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro  # your Immich uploads
+    working_dir: /data
+    command: >
+      duplicacy -log -pref-dir /config/.duplicacy init -e ${SNAPSHOT_ID}
+      b2://${B2_BUCKET}/${B2_PREFIX}
     deploy:
-      replicas: 0  # Start at 0, scale up when needed
+      replicas: 0
+      restart_policy:
+        condition: none
       placement:
         constraints:
           - node.role == manager
+
+  # 3) Backup job (every 3 days at 00:00)
+  duplicacy-backup:
+    image: gilbertchen/duplicacy:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
+      - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
+      - DUPLICACY_PASSWORD=${DUPLICACY_PASSWORD}
+    volumes:
+      - duplicacy_config_v1:/config
+      - duplicacy_cache_v1:/cache
+      - duplicacy_logs_v1:/logs
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro
+    working_dir: /data
+    deploy:
+      replicas: 0   # cron will spawn tasks when scheduled
       restart_policy:
         condition: none
-    # Override entrypoint to keep container running
-    entrypoint: ["tail", "-f", "/dev/null"]
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=duplicacy-immich-backup"
+        - "swarm.cronjob.schedule=0 0 */3 * *"
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+        - >-
+          swarm.cronjob.command=duplicacy -log
+          -pref-dir /config/.duplicacy
+          -repository /data
+          backup -stats -threads 4
+
+  # 4) Prune job (keep only 2 latest; runs 30 min after backup)
+  duplicacy-prune:
+    image: gilbertchen/duplicacy:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
+      - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
+      - DUPLICACY_PASSWORD=${DUPLICACY_PASSWORD}
+    volumes:
+      - duplicacy_config_v1:/config
+      - duplicacy_cache_v1:/cache
+      - duplicacy_logs_v1:/logs
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro
+    working_dir: /data
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=duplicacy-immich-prune"
+        - "swarm.cronjob.schedule=30 0 */3 * *"
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+        - >-
+          swarm.cronjob.command=duplicacy -log
+          -pref-dir /config/.duplicacy
+          -repository /data
+          prune -a -keep 0:2
 
 networks:
-  dokploy-network:
-    external: true
+  # optional: place on your existing overlay if you like
+  # dokploy-network:
+  #   external: true
 
-# Note: Volumes are handled by NFS mounts, no need to define them here
+volumes:
+  # Persist duplicacy app data on Rockstor (NFS)
+  duplicacy_config_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/duplicacy/config
+  duplicacy_cache_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/duplicacy/cache
+  duplicacy_logs_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/duplicacy/logs
+
+  # Reuse Immich uploads volume from your Immich stack
+  apps-immich-faefqq_immich_uploads_v1:
+    external: true

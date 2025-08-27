@@ -3,8 +3,10 @@ version: "3.8"
 services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    environment:
+      - UPLOAD_LOCATION=/media/plex/images        # inside-container path
     volumes:
-      - ${UPLOAD_LOCATION}:/usr/src/app/upload
+      - plex_media_v1:/media/plex                 # Synology share root mounted here
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
@@ -33,7 +35,7 @@ services:
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
     volumes:
-      - model-cache:/cache
+      - immich_model_cache_v1:/cache               # Rockstor NFS cache
     env_file:
       - .env
     networks:
@@ -65,16 +67,41 @@ services:
       POSTGRES_DB: ${DB_DATABASE_NAME}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
-      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+      - immich_db_local:/var/lib/postgresql/data    # bind to metal2 local path
     shm_size: 128mb
     networks:
       - dokploy-network
     deploy:
       restart_policy:
         condition: on-failure
+      placement:
+        constraints:
+          - node.labels.immichdb == 1               # pin DB to metal2
 
 volumes:
-  model-cache:
+  # Rockstor model cache
+  immich_model_cache_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/immich/model-cache
+
+  # Synology share root (we’ll use /media/plex/images inside container)
+  plex_media_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.154,vers=3,rw
+      device: ":/volume1/Plex Media"
+
+  # Local bind on metal2 for Postgres data
+  immich_db_local:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/appdata/immich/postgres
 
 networks:
   dokploy-network:

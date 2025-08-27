@@ -21,22 +21,20 @@ services:
     image: gilbertchen/duplicacy:latest
     environment:
       - TZ=Australia/Adelaide
-      # Backblaze + encryption (set these in Dokploy as env/secrets)
-      - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
-      - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
-      - DUPLICACY_PASSWORD=${DUPLICACY_PASSWORD}
+      # Backblaze creds (use your Dokploy env; we map to the names Duplicacy expects)
+      - B2_ID=${DUPLICACY_B2_ID}
+      - B2_KEY=${DUPLICACY_B2_KEY}
       - SNAPSHOT_ID=${SNAPSHOT_ID:-immich-uploads}
       - B2_BUCKET=${B2_BUCKET}
       - B2_PREFIX=${B2_PREFIX:-immich}
     volumes:
-      - duplicacy_config_v1:/config         # preferences live here
+      - duplicacy_config_v1:/config
       - duplicacy_cache_v1:/cache
       - duplicacy_logs_v1:/logs
-      - apps-immich-faefqq_immich_uploads_v1:/data:ro  # your Immich uploads
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro
     working_dir: /data
-    command: >
-      duplicacy -log -pref-dir /config/.duplicacy init -e ${SNAPSHOT_ID}
-      b2://${B2_BUCKET}/${B2_PREFIX}
+    # No "-e" (client-side encryption) since you said it's disabled
+    command: ["sh","-lc","duplicacy -log -pref-dir /config/.duplicacy init ${SNAPSHOT_ID} b2://${B2_BUCKET}/${B2_PREFIX}"]
     deploy:
       replicas: 0
       restart_policy:
@@ -45,14 +43,13 @@ services:
         constraints:
           - node.role == manager
 
-  # 3) Backup job (every 3 days at 00:00)
+  # 3) Backup job (every 3 days at 00:00 Adelaide time)
   duplicacy-backup:
     image: gilbertchen/duplicacy:latest
     environment:
       - TZ=Australia/Adelaide
-      - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
-      - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
-      - DUPLICACY_PASSWORD=${DUPLICACY_PASSWORD}
+      - B2_ID=${DUPLICACY_B2_ID}
+      - B2_KEY=${DUPLICACY_B2_KEY}
     volumes:
       - duplicacy_config_v1:/config
       - duplicacy_cache_v1:/cache
@@ -60,7 +57,7 @@ services:
       - apps-immich-faefqq_immich_uploads_v1:/data:ro
     working_dir: /data
     deploy:
-      replicas: 0   # cron will spawn tasks when scheduled
+      replicas: 0
       restart_policy:
         condition: none
       labels:
@@ -69,20 +66,15 @@ services:
         - "swarm.cronjob.schedule=0 0 */3 * *"
         - "swarm.cronjob.tz=Australia/Adelaide"
         - "swarm.cronjob.skip-running=true"
-        - >-
-          swarm.cronjob.command=duplicacy -log
-          -pref-dir /config/.duplicacy
-          -repository /data
-          backup -stats -threads 4
+        - "swarm.cronjob.command=sh -lc 'duplicacy -log -pref-dir /config/.duplicacy -repository /data backup -stats -threads 4'"
 
-  # 4) Prune job (keep only 2 latest; runs 30 min after backup)
+  # 4) Prune job (keep only 2 latest; runs 00:30 same days)
   duplicacy-prune:
     image: gilbertchen/duplicacy:latest
     environment:
       - TZ=Australia/Adelaide
-      - B2_ACCOUNT_ID=${B2_ACCOUNT_ID}
-      - B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}
-      - DUPLICACY_PASSWORD=${DUPLICACY_PASSWORD}
+      - B2_ID=${DUPLICACY_B2_ID}
+      - B2_KEY=${DUPLICACY_B2_KEY}
     volumes:
       - duplicacy_config_v1:/config
       - duplicacy_cache_v1:/cache
@@ -99,19 +91,10 @@ services:
         - "swarm.cronjob.schedule=30 0 */3 * *"
         - "swarm.cronjob.tz=Australia/Adelaide"
         - "swarm.cronjob.skip-running=true"
-        - >-
-          swarm.cronjob.command=duplicacy -log
-          -pref-dir /config/.duplicacy
-          -repository /data
-          prune -a -keep 0:2
-
-networks:
-  # optional: place on your existing overlay if you like
-  # dokploy-network:
-  #   external: true
+        - "swarm.cronjob.command=sh -lc 'duplicacy -log -pref-dir /config/.duplicacy -repository /data prune -a -keep 0:2'"
 
 volumes:
-  # Persist duplicacy app data on Rockstor (NFS)
+  # Rockstor NFS
   duplicacy_config_v1:
     driver: local
     driver_opts:
@@ -131,6 +114,6 @@ volumes:
       o: addr=192.168.1.184,nfsvers=4.1,rw
       device: :/export/appdata/duplicacy/logs
 
-  # Reuse Immich uploads volume from your Immich stack
+  # Reuse external Immich uploads volume from your Immich stack
   apps-immich-faefqq_immich_uploads_v1:
     external: true

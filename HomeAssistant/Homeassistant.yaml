@@ -52,10 +52,9 @@ services:
       - |
         # Debug what we're starting with
         echo "DEBUG: Initial HA_UPSTREAM value: '${HA_UPSTREAM}'"
-        echo "DEBUG: Initial HA_UPSTREAM length: ${#HA_UPSTREAM}"
 
         # Clean any whitespace and force a sane default
-        HA_UPSTREAM=$(echo "$HA_UPSTREAM" | tr -d '[:space:]')
+        HA_UPSTREAM=`echo "$HA_UPSTREAM" | tr -d '[:space:]'`
 
         if [ -z "$HA_UPSTREAM" ]; then
           HA_UPSTREAM=192.168.1.194:8123

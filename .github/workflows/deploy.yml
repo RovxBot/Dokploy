@@ -49,15 +49,14 @@ jobs:
 
     - name: Install Docker Compose
       run: |
-        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        docker-compose --version
+        # Docker Compose v2 is already available as 'docker compose'
+        docker compose version
 
     - name: Make validation script executable
-      run: chmod +x scripts/validate-compose.sh
+      run: chmod +x scripts/validate-simple.sh
 
     - name: Validate compose files
-      run: ./scripts/validate-compose.sh
+      run: ./scripts/validate-simple.sh
     
     - name: Upload validation logs
       if: always()

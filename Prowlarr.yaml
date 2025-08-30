@@ -8,7 +8,7 @@ services:
       - PGID=1000
       - TZ=Australia/Adelaide
     volumes:
-      - /srv/appdata/prowlarr/config:/config
+      - prowlarr_config_v1:/config
     networks:
       - dokploy-network
     deploy:
@@ -20,6 +20,14 @@ services:
         - "traefik.http.routers.prowlarr.tls=false"
         - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  prowlarr_config_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/prowlarr/config"
 
 networks:
   dokploy-network:

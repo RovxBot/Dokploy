@@ -1,0 +1,119 @@
+version: "3.8"
+
+services:
+  # 1) Cron controller (runs on a manager)
+  swarm-cronjob:
+    image: ghcr.io/crazy-max/swarm-cronjob:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - LOG_LEVEL=info
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+  # 2) One-time initializer (scale to 1 once, then back to 0)
+  duplicacy-init:
+    image: gilbertchen/duplicacy:latest
+    environment:
+      - TZ=Australia/Adelaide
+      # Backblaze creds (use your Dokploy env; we map to the names Duplicacy expects)
+      - B2_ID=${DUPLICACY_B2_ID}
+      - B2_KEY=${DUPLICACY_B2_KEY}
+      - SNAPSHOT_ID=${SNAPSHOT_ID:-immich-uploads}
+      - B2_BUCKET=${B2_BUCKET}
+      - B2_PREFIX=${B2_PREFIX:-immich}
+    volumes:
+      - duplicacy_config_v1:/config
+      - duplicacy_cache_v1:/cache
+      - duplicacy_logs_v1:/logs
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro
+    working_dir: /data
+    # No "-e" (client-side encryption) since you said it's disabled
+    command: ["sh","-lc","duplicacy -log -pref-dir /config/.duplicacy init ${SNAPSHOT_ID} b2://${B2_BUCKET}/${B2_PREFIX}"]
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.role == manager
+
+  # 3) Backup job (every 3 days at 00:00 Adelaide time)
+  duplicacy-backup:
+    image: gilbertchen/duplicacy:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - B2_ID=${DUPLICACY_B2_ID}
+      - B2_KEY=${DUPLICACY_B2_KEY}
+    volumes:
+      - duplicacy_config_v1:/config
+      - duplicacy_cache_v1:/cache
+      - duplicacy_logs_v1:/logs
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro
+    working_dir: /data
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=duplicacy-immich-backup"
+        - "swarm.cronjob.schedule=0 0 */3 * *"
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+        - "swarm.cronjob.command=sh -lc 'duplicacy -log -pref-dir /config/.duplicacy -repository /data backup -stats -threads 4'"
+
+  # 4) Prune job (keep only 2 latest; runs 00:30 same days)
+  duplicacy-prune:
+    image: gilbertchen/duplicacy:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - B2_ID=${DUPLICACY_B2_ID}
+      - B2_KEY=${DUPLICACY_B2_KEY}
+    volumes:
+      - duplicacy_config_v1:/config
+      - duplicacy_cache_v1:/cache
+      - duplicacy_logs_v1:/logs
+      - apps-immich-faefqq_immich_uploads_v1:/data:ro
+    working_dir: /data
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=duplicacy-immich-prune"
+        - "swarm.cronjob.schedule=30 0 */3 * *"
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+        - "swarm.cronjob.command=sh -lc 'duplicacy -log -pref-dir /config/.duplicacy -repository /data prune -a -keep 0:2'"
+
+volumes:
+  # Rockstor NFS
+  duplicacy_config_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/duplicacy/config
+  duplicacy_cache_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/duplicacy/cache
+  duplicacy_logs_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/duplicacy/logs
+
+  # Reuse external Immich uploads volume from your Immich stack
+  apps-immich-faefqq_immich_uploads_v1:
+    external: true

@@ -1,0 +1,29 @@
+watch:
+  workers: 20
+  schedule: "0 9 * * 0"  # Sunday 9 AM
+  jitter: "30s"
+
+providers:
+  swarm:
+    watchByDefault: false
+
+notif:
+  webhook:
+    endpoint: "${WEBHOOK_URL}"
+    method: POST
+    headers:
+      content-type: application/json
+    templateBody: |
+      {
+        "title": "Docker Update Available",
+        "service": "{{ .Entry.Image.Path }}",
+        "registry": "{{ .Entry.Image.Domain }}",
+        "currentVersion": "{{ .Entry.Image.Tag }}",
+        "latestVersion": "{{ .Entry.Manifest.Tag }}",
+        "releaseDate": "{{ .Entry.Image.Created.Format \"2006-01-02 15:04:05\" }}",
+        "dockerHubUrl": "https://hub.docker.com/r/{{ .Entry.Image.Path }}",
+        "fullImageName": "{{ .Entry.Image.Domain }}/{{ .Entry.Image.Path }}:{{ .Entry.Manifest.Tag }}",
+        "timestamp": "{{ now.Format \"2006-01-02 15:04:05\" }}",
+        "updateAvailable": true,
+        "severity": "info"
+      }

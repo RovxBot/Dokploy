@@ -4,14 +4,13 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
+      - PUID=1000
+      - PGID=1000
       - TZ=Australia/Adelaide
     volumes:
-      - /srv/appdata/sonarr/config:/config
-      # Uncomment and adjust these if needed:
-      - "/srv/media/plex/TV shows:/tv"
-      - /srv/media/plex/Downloads:/downloads
+      - sonarr_config_v2:/config
+      - tv_shows_v3:/tv
+      - downloads_v3:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -23,6 +22,28 @@ services:
         - "traefik.http.routers.sonarr.tls=false"
         - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  sonarr_config_v2:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/sonarr/config"
+
+  tv_shows_v3:                     # NEW name to force fresh creation
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.154,vers=3,rw"
+      device: ":/volume1/Plex Media"
+
+  downloads_v3:                    # NEW name to force fresh creation
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.154,vers=3,rw"
+      device: ":/volume1/Plex Media"
 
 networks:
   dokploy-network:

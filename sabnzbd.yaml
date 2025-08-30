@@ -9,8 +9,8 @@ services:
       - TZ=Australia/Adelaide
       - HOST_WHITELIST=${HOST}
     volumes:
-      - /srv/appdata/sabnzbd/config:/config
-      - /srv/media/plex/Downloads:/downloads
+      - sabnzbd_config_v2:/config
+      - downloads_v4:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -22,6 +22,21 @@ services:
         - "traefik.http.routers.sabnzbd.tls=false"
         - "traefik.http.services.sabnzbd.loadbalancer.server.port=8080"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  sabnzbd_config_v2:
+    driver: local
+    driver_opts:
+      type: "nfs"               # keep as nfs; v3/v4 decided by options
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/sabnzbd/config"
+
+  downloads_v4:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.154,vers=3,rw"
+      device: ":/volume1/Plex Media"
 
 networks:
   dokploy-network:

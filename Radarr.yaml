@@ -8,9 +8,9 @@ services:
       - PGID=1000
       - TZ=Australia/Adelaide
     volumes:
-      - /srv/appdata/radarr/config:/config
-      - /srv/media/emby/Movies:/movies
-      - /srv/media/plex/Downloads:/downloads
+      - radarr_config_v1:/config
+      - movies_v1:/movies
+      - downloads_v3:/downloads
     networks:
       - dokploy-network
     deploy:
@@ -22,6 +22,31 @@ services:
         - "traefik.http.routers.radarr.tls=false"
         - "traefik.http.services.radarr.loadbalancer.server.port=7878"
         - "traefik.docker.network=dokploy-network"
+
+volumes:
+  # Config on Rockstor
+  radarr_config_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.184,nfsvers=4.1,rw"
+      device: ":/export/appdata/radarr/config"
+
+  # Movies share root on NAS #1
+  movies_v1:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.153,vers=3,rw"
+      device: ":/volume1/emby_media"   # inside Radarr use /movies/Movies
+
+  # Downloads share root on NAS #2
+  downloads_v3:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.1.154,vers=3,rw"
+      device: ":/volume1/Plex Media"   # inside Radarr use /downloads/Downloads[/Done]
 
 networks:
   dokploy-network:

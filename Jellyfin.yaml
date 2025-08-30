@@ -2,18 +2,73 @@ version: "3.8"
 
 services:
   jellyfin:
-    image: jellyfin/jellyfin
-    network_mode: host
-    volumes:
-      - ${VOLUME1}
-      - ${VOLUME2}
-      - type: bind
-        source: ${BIND1SOURCE}
-        target: ${BIND1TARGET}
-      - type: bind
-        source: ${BIND2SOURCE}
-        target: ${BIND2TARGET}
+    image: jellyfin/jellyfin:latest
+    ports:
+      - target: 8096
+        published: 8096
+        protocol: tcp
+        mode: host
     environment:
-      - JELLYFIN_PublishedServerUrl=${PUBLISHED}
-      - JELLYFIN_NETWORK_BIND_ADDRESS=127.0.0.1
+      - JELLYFIN_PublishedServerUrl=http://192.168.1.190:8096
+      - TZ=Australia/Adelaide
+    volumes:
+      - jellyfin_config_v2:/config                 # NFS (Rockstor)
+      - jellyfin_cache_v2:/cache                   # NFS (Rockstor)
+      - jellyfin_db_local:/config/data             # LOCAL tiny DB overlay (fixes locks)
+      - type: tmpfs                                # super fast transcode scratch
+        target: /transcode
+        tmpfs:
+          size: 8589934592                         # 8 GiB in bytes
+          mode: 1777
+      - plex_media_v1:/media/plex                  # NAS #2 share root
+      - emby_media_v1:/media/emby                  # NAS #1 share root
+    deploy:
+      placement:
+        constraints:
+          - node.labels.jellyfin == 1                # keep Jellyfin on metal0
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  # Rockstor (config + cache)
+  jellyfin_config_v2:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/jellyfin/config
+
+  jellyfin_cache_v2:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/jellyfin/cache
+
+  # LOCAL ONLY (on metal0) – tiny footprint, solves SQLite locks
+  jellyfin_db_local:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/jellyfin-db
+
+  # Media (Synology shares)
+  plex_media_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.154,nfsvers=3,rw
+      device: ":/volume1/Plex Media"
+
+  emby_media_v1:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.153,nfsvers=3,rw
+      device: :/volume1/emby_media

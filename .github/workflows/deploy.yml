@@ -82,6 +82,9 @@ jobs:
       run: |
         echo "Current branch: ${{ github.ref_name }}"
         echo "Event: ${{ github.event_name }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "SHA: ${{ github.sha }}"
+        echo "Ref: ${{ github.ref }}"
 
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           # Manual deployment
@@ -89,7 +92,16 @@ jobs:
           case "${{ github.event.inputs.service }}" in
             "jellyfin")
               echo "Deploying Jellyfin..."
-              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYFIN_WEBHOOK }}"
+              echo "Trying different branch formats..."
+
+              echo "Attempt 1: Standard GitHub webhook format"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"},"head_commit":{"id":"'${{ github.sha }}'"},"pusher":{"name":"github-actions"}}' "${{ secrets.JELLYFIN_WEBHOOK }}"
+
+              echo "Attempt 2: Simple branch name"
+              curl -X POST -H "Content-Type: application/json" -d '{"branch":"main"}' "${{ secrets.JELLYFIN_WEBHOOK }}"
+
+              echo "Attempt 3: Empty payload (original)"
+              curl -X POST "${{ secrets.JELLYFIN_WEBHOOK }}"
               ;;
             "immich")
               echo "Deploying Immich..."

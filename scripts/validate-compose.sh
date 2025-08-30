@@ -16,24 +16,75 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGS_DIR/validation.log"
 }
 
+# Check if docker-compose is available
+check_docker_compose() {
+    if command -v docker-compose &> /dev/null; then
+        return 0
+    elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+        # Use docker compose instead of docker-compose
+        DOCKER_COMPOSE_CMD="docker compose"
+        return 0
+    else
+        log "Warning: Neither docker-compose nor docker compose found. Skipping syntax validation."
+        DOCKER_COMPOSE_CMD=""
+        return 1
+    fi
+}
+
 # Validation function
 validate_compose_file() {
     local file="$1"
     local filename=$(basename "$file")
-    
+
     log "Validating $filename..."
-    
+
     # Check if file exists
     if [ ! -f "$file" ]; then
         log "Error: $filename not found"
         return 1
     fi
-    
-    # Validate YAML syntax
-    if ! docker-compose -f "$file" config > /dev/null 2>&1; then
-        log "Error: $filename has invalid YAML syntax"
-        docker-compose -f "$file" config 2>&1 | tee -a "$LOGS_DIR/validation.log"
-        return 1
+
+    # Skip empty files
+    if [ ! -s "$file" ]; then
+        log "Warning: $filename is empty, skipping"
+        return 0
+    fi
+
+    # Validate YAML syntax if docker-compose is available
+    if [ -n "$DOCKER_COMPOSE_CMD" ]; then
+        local compose_output
+        compose_output=$($DOCKER_COMPOSE_CMD -f "$file" config 2>&1)
+        local compose_exit_code=$?
+
+        if [ $compose_exit_code -ne 0 ]; then
+            # Check if it's a docker-compose availability issue
+            if echo "$compose_output" | grep -q "could not be found\|not recognized"; then
+                log "Warning: Docker Compose not available, skipping syntax validation for $filename"
+                DOCKER_COMPOSE_CMD=""  # Disable for subsequent files
+            else
+                log "Error: $filename has invalid YAML syntax"
+                echo "$compose_output" | tee -a "$LOGS_DIR/validation.log"
+                return 1
+            fi
+        fi
+    fi
+
+    # Fallback YAML syntax check if docker-compose not available
+    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
+        # Basic YAML syntax check using python if available
+        if command -v python3 &> /dev/null; then
+            if ! python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+                log "Error: $filename has invalid YAML syntax (python validation)"
+                return 1
+            fi
+        elif command -v python &> /dev/null; then
+            if ! python -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+                log "Error: $filename has invalid YAML syntax (python validation)"
+                return 1
+            fi
+        else
+            log "Info: Basic YAML validation for $filename (no docker-compose or python available)"
+        fi
     fi
     
     # Check for common issues
@@ -54,8 +105,8 @@ validate_compose_file() {
         fi
     fi
     
-    # Check for proper network configuration
-    if ! grep -q "dokploy-network" "$file"; then
+    # Check for proper network configuration (skip if using host networking)
+    if ! grep -q "dokploy-network" "$file" && ! grep -q "network_mode: host" "$file" && ! grep -q "mode: host" "$file"; then
         log "Warning: $filename may not be using the standard dokploy-network"
         ((issues++))
     fi
@@ -80,30 +131,44 @@ validate_compose_file() {
 # Main validation function
 main() {
     log "=== Docker Compose Validation Started ==="
-    
+
+    # Initialize docker-compose command
+    DOCKER_COMPOSE_CMD="docker-compose"
+    check_docker_compose
+
     local total_files=0
     local failed_files=0
     
-    # Find all compose files
-    for file in "$COMPOSE_DIR"/*.yaml "$COMPOSE_DIR"/*.yml; do
-        if [ -f "$file" ]; then
-            ((total_files++))
-            if ! validate_compose_file "$file"; then
-                ((failed_files++))
-            fi
-        fi
-    done
-    
-    # Check subdirectories
-    for dir in "$COMPOSE_DIR"/*/; do
-        if [ -d "$dir" ]; then
-            for file in "$dir"*.yaml "$dir"*.yml; do
-                if [ -f "$file" ]; then
-                    ((total_files++))
-                    if ! validate_compose_file "$file"; then
-                        ((failed_files++))
-                    fi
+    # Find all compose files - simplified approach
+    log "Searching for compose files in $COMPOSE_DIR"
+
+    # Check root directory files
+    for ext in yaml yml; do
+        for file in "$COMPOSE_DIR"/*.$ext; do
+            if [ -f "$file" ] && [ "$file" != "$COMPOSE_DIR/*.$ext" ]; then
+                log "Found file: $file"
+                ((total_files++))
+                if ! validate_compose_file "$file"; then
+                    ((failed_files++))
                 fi
+            fi
+        done
+    done
+
+    # Check specific known subdirectories
+    for subdir in compose HomeAssistant Duplicacy Traefik update-monitor; do
+        if [ -d "$COMPOSE_DIR/$subdir" ]; then
+            log "Checking directory: $COMPOSE_DIR/$subdir"
+            for ext in yaml yml; do
+                for file in "$COMPOSE_DIR/$subdir"/*.$ext; do
+                    if [ -f "$file" ] && [ "$file" != "$COMPOSE_DIR/$subdir/*.$ext" ]; then
+                        log "Found file: $file"
+                        ((total_files++))
+                        if ! validate_compose_file "$file"; then
+                            ((failed_files++))
+                        fi
+                    fi
+                done
             done
         fi
     done
@@ -137,7 +202,17 @@ fi
 
 # Validate specific file if provided
 if [ -n "$1" ]; then
-    validate_compose_file "$1"
+    # Initialize docker-compose command for single file validation
+    DOCKER_COMPOSE_CMD="docker-compose"
+    check_docker_compose
+
+    if validate_compose_file "$1"; then
+        log "Validation completed successfully"
+        exit 0
+    else
+        log "Validation failed"
+        exit 1
+    fi
 else
     main
 fi

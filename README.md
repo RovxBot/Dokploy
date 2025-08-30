@@ -7,13 +7,8 @@ Docker Swarm infrastructure managed through Dokploy with Infrastructure as Code 
 ```
 ├── compose/                 # New service compositions
 │   └── netdata.yml         # Netdata monitoring
-├── config/                 # Configuration templates
-│   ├── webhooks.env.template
-│   └── duplicacy.env.template
 ├── scripts/                # Automation scripts
-│   ├── deploy.sh          # Deployment automation
-│   ├── validate-compose.sh # Compose file validation
-│   └── backup-before-deploy.sh # Pre-deployment backups
+│   └── validate-compose.sh # Compose file validation
 ├── Doco/                   # Documentation
 ├── update-monitor/         # Update monitoring system
 ├── Duplicacy/             # Backup configurations
@@ -24,30 +19,19 @@ Docker Swarm infrastructure managed through Dokploy with Infrastructure as Code 
 
 ## Quick Start
 
-### 1. Configure Webhooks
+### 1. Set up GitHub Secrets
+Configure webhook URLs in your GitHub repository secrets:
+- `JELLYFIN_WEBHOOK`, `IMMICH_WEBHOOK`, `VAULTWARDEN_WEBHOOK`, etc.
+- `NETDATA_WEBHOOK` for monitoring deployment
+
+### 2. Automated Deployments
+- **Push to main branch** - Automatically deploys only changed services
+- **Manual deployment** - Use GitHub Actions workflow dispatch to deploy specific services
+- **Validation** - All compose files are validated before deployment
+
+### 3. Validate Compose Files Locally
 ```bash
-cp config/webhooks.env.template config/webhooks.env
-# Edit config/webhooks.env with your Dokploy webhook URLs
-```
-
-### 2. Configure Backups (Optional)
-```bash
-cp config/duplicacy.env.template config/duplicacy.env
-# Edit config/duplicacy.env with your Backblaze B2 credentials
-```
-
-### 3. Deploy Services
-```bash
-# Make scripts executable
-chmod +x scripts/*.sh
-
-# Deploy single service
-./scripts/deploy.sh jellyfin
-
-# Deploy all services
-./scripts/deploy.sh all
-
-# Validate compose files
+chmod +x scripts/validate-compose.sh
 ./scripts/validate-compose.sh
 ```
 
@@ -77,22 +61,24 @@ chmod +x scripts/*.sh
 
 ## Automation Features
 
-- **GitHub Actions CI/CD** - Automated deployments on push
-- **Compose Validation** - Syntax and configuration checking
-- **Health Checks** - Post-deployment service verification
-- **Pre-deployment Backups** - Automatic snapshots before updates
-- **Update Monitoring** - Weekly update notifications
-
-## Manual Tasks Required
-
-1. **Set up GitHub Secrets** for webhook URLs
-2. **Configure Netdata Cloud** (optional) for centralized monitoring
-3. **Set up Backblaze B2** credentials for backup functionality
-4. **Configure notification webhooks** in Dokploy
+- **GitHub Actions CI/CD** - Automated deployments on push to main
+- **Selective Deployment** - Only deploys services with changed files
+- **Compose Validation** - Syntax and configuration checking before deployment
+- **Manual Deployment** - Workflow dispatch for specific services
+- **Update Monitoring** - Weekly update notifications via DIUN
 
 ## Development Workflow
 
 1. Make changes to compose files
-2. Validate locally: `./scripts/validate-compose.sh`
-3. Commit and push to trigger automated deployment
-4. Monitor deployment logs in GitHub Actions
+2. Validate locally (optional): `./scripts/validate-compose.sh`
+3. Commit and push to main branch
+4. GitHub Actions automatically deploys only changed services
+5. Monitor deployment in GitHub Actions and Dokploy dashboard
+
+## Manual Deployment
+
+Use GitHub Actions workflow dispatch to deploy specific services:
+1. Go to Actions tab in GitHub
+2. Select "Deploy to Dokploy" workflow
+3. Click "Run workflow"
+4. Choose the service to deploy

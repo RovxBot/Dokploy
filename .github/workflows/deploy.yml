@@ -2,13 +2,16 @@ name: Deploy to Dokploy
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
     paths:
       - '*.yaml'
       - '*.yml'
-      - 'scripts/**'
-      - '.github/workflows/**'
-  
+      - 'compose/*.yml'
+      - 'HomeAssistant/**'
+      - 'Duplicacy/**'
+      - 'Traefik/**'
+      - 'update-monitor/**'
+
   workflow_dispatch:
     inputs:
       service:
@@ -30,6 +33,7 @@ on:
         - duplicacy
         - diun
         - homeassistant
+        - netdata
 
 jobs:
   validate:
@@ -62,108 +66,120 @@ jobs:
     needs: validate
     if: github.ref == 'refs/heads/main'
     name: Deploy to Production
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Create webhook config
-      run: |
-        mkdir -p config
-        cat > config/webhooks.env << EOF
-        JELLYFIN_WEBHOOK="${{ secrets.JELLYFIN_WEBHOOK }}"
-        IMMICH_WEBHOOK="${{ secrets.IMMICH_WEBHOOK }}"
-        VAULTWARDEN_WEBHOOK="${{ secrets.VAULTWARDEN_WEBHOOK }}"
-        SONARR_WEBHOOK="${{ secrets.SONARR_WEBHOOK }}"
-        SABNZBD_WEBHOOK="${{ secrets.SABNZBD_WEBHOOK }}"
-        PROWLARR_WEBHOOK="${{ secrets.PROWLARR_WEBHOOK }}"
-        JELLYSEERR_WEBHOOK="${{ secrets.JELLYSEERR_WEBHOOK }}"
-        RADARR_WEBHOOK="${{ secrets.RADARR_WEBHOOK }}"
-        CLOUDFLARED_WEBHOOK="${{ secrets.CLOUDFLARED_WEBHOOK }}"
-        DUPLICACY_WEBHOOK="${{ secrets.DUPLICACY_WEBHOOK }}"
-        DIUN_WEBHOOK="${{ secrets.DIUN_WEBHOOK }}"
-        HOMEASSISTANT_WEBHOOK="${{ secrets.HOMEASSISTANT_WEBHOOK }}"
-        EOF
-    
-    - name: Make deploy script executable
-      run: chmod +x scripts/deploy.sh
+      with:
+        fetch-depth: 2
     
     - name: Deploy services
       run: |
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          ./scripts/deploy.sh "${{ github.event.inputs.service }}"
+          # Manual deployment
+          case "${{ github.event.inputs.service }}" in
+            "jellyfin") curl -X POST "${{ secrets.JELLYFIN_WEBHOOK }}" ;;
+            "immich") curl -X POST "${{ secrets.IMMICH_WEBHOOK }}" ;;
+            "vaultwarden") curl -X POST "${{ secrets.VAULTWARDEN_WEBHOOK }}" ;;
+            "sonarr") curl -X POST "${{ secrets.SONARR_WEBHOOK }}" ;;
+            "sabnzbd") curl -X POST "${{ secrets.SABNZBD_WEBHOOK }}" ;;
+            "prowlarr") curl -X POST "${{ secrets.PROWLARR_WEBHOOK }}" ;;
+            "jellyseerr") curl -X POST "${{ secrets.JELLYSEERR_WEBHOOK }}" ;;
+            "radarr") curl -X POST "${{ secrets.RADARR_WEBHOOK }}" ;;
+            "cloudflared") curl -X POST "${{ secrets.CLOUDFLARED_WEBHOOK }}" ;;
+            "duplicacy") curl -X POST "${{ secrets.DUPLICACY_WEBHOOK }}" ;;
+            "diun") curl -X POST "${{ secrets.DIUN_WEBHOOK }}" ;;
+            "homeassistant") curl -X POST "${{ secrets.HOMEASSISTANT_WEBHOOK }}" ;;
+            "netdata") curl -X POST "${{ secrets.NETDATA_WEBHOOK }}" ;;
+            "all")
+              curl -X POST "${{ secrets.JELLYFIN_WEBHOOK }}"
+              curl -X POST "${{ secrets.IMMICH_WEBHOOK }}"
+              curl -X POST "${{ secrets.VAULTWARDEN_WEBHOOK }}"
+              curl -X POST "${{ secrets.SONARR_WEBHOOK }}"
+              curl -X POST "${{ secrets.SABNZBD_WEBHOOK }}"
+              curl -X POST "${{ secrets.PROWLARR_WEBHOOK }}"
+              curl -X POST "${{ secrets.JELLYSEERR_WEBHOOK }}"
+              curl -X POST "${{ secrets.RADARR_WEBHOOK }}"
+              curl -X POST "${{ secrets.CLOUDFLARED_WEBHOOK }}"
+              curl -X POST "${{ secrets.DUPLICACY_WEBHOOK }}"
+              curl -X POST "${{ secrets.DIUN_WEBHOOK }}"
+              curl -X POST "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
+              curl -X POST "${{ secrets.NETDATA_WEBHOOK }}"
+              ;;
+          esac
         else
           # Auto-deploy based on changed files
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-          
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files: $CHANGED_FILES"
+
           if echo "$CHANGED_FILES" | grep -q "Jellyfin.yaml"; then
-            ./scripts/deploy.sh jellyfin
+            echo "Deploying Jellyfin..."
+            curl -X POST "${{ secrets.JELLYFIN_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Immich.yml"; then
-            ./scripts/deploy.sh immich
+            echo "Deploying Immich..."
+            curl -X POST "${{ secrets.IMMICH_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Vaultwarden.yaml"; then
-            ./scripts/deploy.sh vaultwarden
+            echo "Deploying Vaultwarden..."
+            curl -X POST "${{ secrets.VAULTWARDEN_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Sonarr.yaml"; then
-            ./scripts/deploy.sh sonarr
+            echo "Deploying Sonarr..."
+            curl -X POST "${{ secrets.SONARR_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "sabnzbd.yaml"; then
-            ./scripts/deploy.sh sabnzbd
+            echo "Deploying SABnzbd..."
+            curl -X POST "${{ secrets.SABNZBD_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Prowlarr.yaml"; then
-            ./scripts/deploy.sh prowlarr
+            echo "Deploying Prowlarr..."
+            curl -X POST "${{ secrets.PROWLARR_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Jellyseerr.yaml"; then
-            ./scripts/deploy.sh jellyseerr
+            echo "Deploying Jellyseerr..."
+            curl -X POST "${{ secrets.JELLYSEERR_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Radarr.yaml"; then
-            ./scripts/deploy.sh radarr
+            echo "Deploying Radarr..."
+            curl -X POST "${{ secrets.RADARR_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Cloudflared.yaml"; then
-            ./scripts/deploy.sh cloudflared
+            echo "Deploying Cloudflared..."
+            curl -X POST "${{ secrets.CLOUDFLARED_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "Duplicacy/"; then
-            ./scripts/deploy.sh duplicacy
+            echo "Deploying Duplicacy..."
+            curl -X POST "${{ secrets.DUPLICACY_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "update-monitor/"; then
-            ./scripts/deploy.sh diun
+            echo "Deploying DIUN..."
+            curl -X POST "${{ secrets.DIUN_WEBHOOK }}"
           fi
-          
+
           if echo "$CHANGED_FILES" | grep -q "HomeAssistant/"; then
-            ./scripts/deploy.sh homeassistant
+            echo "Deploying Home Assistant..."
+            curl -X POST "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "compose/netdata.yml"; then
+            echo "Deploying Netdata..."
+            curl -X POST "${{ secrets.NETDATA_WEBHOOK }}"
           fi
         fi
     
-    - name: Upload deployment logs
+    - name: Deployment Summary
       if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: deployment-logs
-        path: logs/deploy.log
-        retention-days: 30
-
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: validate
-    if: github.ref == 'refs/heads/develop'
-    name: Deploy to Staging
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Deploy to staging
       run: |
-        echo "Staging deployment would happen here"
-        echo "This could deploy to a staging environment or run additional tests"
+        echo "Deployment completed successfully"
+        echo "Check Dokploy dashboard for service status"

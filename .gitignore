@@ -1,13 +1,8 @@
-# Sensitive configuration files
-config/webhooks.env
-config/duplicacy.env
-config/netdata.env
-
 # Log files
 logs/
 *.log
 
-# Environment files with secrets
+# Environment files with secrets (if any local development)
 .env
 *.env
 

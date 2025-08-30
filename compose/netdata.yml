@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  netdata:
+    image: netdata/netdata:latest
+    hostname: "netdata-{{.Node.Hostname}}"
+    environment:
+      - NETDATA_CLAIM_TOKEN=${NETDATA_CLAIM_TOKEN}
+      - NETDATA_CLAIM_URL=${NETDATA_CLAIM_URL}
+      - NETDATA_CLAIM_ROOMS=${NETDATA_CLAIM_ROOMS}
+    env_file:
+      - ../config/netdata.env
+    ports:
+      - target: 19999
+        published: 19999
+        protocol: tcp
+        mode: host
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    networks:
+      - dokploy-network
+    deploy:
+      mode: global
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.netdata.rule=Host(`netdata.cooked.beer`)"
+        - "traefik.http.routers.netdata.entrypoints=web"
+        - "traefik.http.routers.netdata.tls=false"
+        - "traefik.http.services.netdata.loadbalancer.server.port=19999"
+        - "traefik.docker.network=dokploy-network"
+
+volumes:
+  netdataconfig:
+    driver: local
+  netdatalib:
+    driver: local
+  netdatacache:
+    driver: local
+
+networks:
+  dokploy-network:
+    external: true

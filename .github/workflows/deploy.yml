@@ -1,0 +1,169 @@
+name: Deploy to Dokploy
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '*.yaml'
+      - '*.yml'
+      - 'scripts/**'
+      - '.github/workflows/**'
+  
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - jellyfin
+        - immich
+        - vaultwarden
+        - sonarr
+        - sabnzbd
+        - prowlarr
+        - jellyseerr
+        - radarr
+        - cloudflared
+        - duplicacy
+        - diun
+        - homeassistant
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Compose Files
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Make validation script executable
+      run: chmod +x scripts/validate-compose.sh
+    
+    - name: Validate compose files
+      run: ./scripts/validate-compose.sh
+    
+    - name: Upload validation logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: validation-logs
+        path: logs/validation.log
+        retention-days: 7
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    name: Deploy to Production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Create webhook config
+      run: |
+        mkdir -p config
+        cat > config/webhooks.env << EOF
+        JELLYFIN_WEBHOOK="${{ secrets.JELLYFIN_WEBHOOK }}"
+        IMMICH_WEBHOOK="${{ secrets.IMMICH_WEBHOOK }}"
+        VAULTWARDEN_WEBHOOK="${{ secrets.VAULTWARDEN_WEBHOOK }}"
+        SONARR_WEBHOOK="${{ secrets.SONARR_WEBHOOK }}"
+        SABNZBD_WEBHOOK="${{ secrets.SABNZBD_WEBHOOK }}"
+        PROWLARR_WEBHOOK="${{ secrets.PROWLARR_WEBHOOK }}"
+        JELLYSEERR_WEBHOOK="${{ secrets.JELLYSEERR_WEBHOOK }}"
+        RADARR_WEBHOOK="${{ secrets.RADARR_WEBHOOK }}"
+        CLOUDFLARED_WEBHOOK="${{ secrets.CLOUDFLARED_WEBHOOK }}"
+        DUPLICACY_WEBHOOK="${{ secrets.DUPLICACY_WEBHOOK }}"
+        DIUN_WEBHOOK="${{ secrets.DIUN_WEBHOOK }}"
+        HOMEASSISTANT_WEBHOOK="${{ secrets.HOMEASSISTANT_WEBHOOK }}"
+        EOF
+    
+    - name: Make deploy script executable
+      run: chmod +x scripts/deploy.sh
+    
+    - name: Deploy services
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          ./scripts/deploy.sh "${{ github.event.inputs.service }}"
+        else
+          # Auto-deploy based on changed files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          
+          if echo "$CHANGED_FILES" | grep -q "Jellyfin.yaml"; then
+            ./scripts/deploy.sh jellyfin
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Immich.yml"; then
+            ./scripts/deploy.sh immich
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Vaultwarden.yaml"; then
+            ./scripts/deploy.sh vaultwarden
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Sonarr.yaml"; then
+            ./scripts/deploy.sh sonarr
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "sabnzbd.yaml"; then
+            ./scripts/deploy.sh sabnzbd
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Prowlarr.yaml"; then
+            ./scripts/deploy.sh prowlarr
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Jellyseerr.yaml"; then
+            ./scripts/deploy.sh jellyseerr
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Radarr.yaml"; then
+            ./scripts/deploy.sh radarr
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Cloudflared.yaml"; then
+            ./scripts/deploy.sh cloudflared
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "Duplicacy/"; then
+            ./scripts/deploy.sh duplicacy
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "update-monitor/"; then
+            ./scripts/deploy.sh diun
+          fi
+          
+          if echo "$CHANGED_FILES" | grep -q "HomeAssistant/"; then
+            ./scripts/deploy.sh homeassistant
+          fi
+        fi
+    
+    - name: Upload deployment logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-logs
+        path: logs/deploy.log
+        retention-days: 30
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/develop'
+    name: Deploy to Staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Staging deployment would happen here"
+        echo "This could deploy to a staging environment or run additional tests"

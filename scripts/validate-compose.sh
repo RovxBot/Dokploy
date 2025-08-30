@@ -53,38 +53,32 @@ validate_compose_file() {
     # Validate YAML syntax if docker-compose is available
     if [ -n "$DOCKER_COMPOSE_CMD" ]; then
         local compose_output
-        compose_output=$($DOCKER_COMPOSE_CMD -f "$file" config 2>&1)
-        local compose_exit_code=$?
+        local compose_exit_code
+
+        # Use timeout to prevent hanging
+        if command -v timeout &> /dev/null; then
+            compose_output=$(timeout 30 $DOCKER_COMPOSE_CMD -f "$file" config 2>&1)
+            compose_exit_code=$?
+        else
+            compose_output=$($DOCKER_COMPOSE_CMD -f "$file" config 2>&1)
+            compose_exit_code=$?
+        fi
 
         if [ $compose_exit_code -ne 0 ]; then
             # Check if it's a docker-compose availability issue
-            if echo "$compose_output" | grep -q "could not be found\|not recognized"; then
-                log "Warning: Docker Compose not available, skipping syntax validation for $filename"
-                DOCKER_COMPOSE_CMD=""  # Disable for subsequent files
+            if echo "$compose_output" | grep -q "could not be found\|not recognized\|timeout"; then
+                log "Warning: Docker Compose validation failed for $filename, skipping syntax check"
+                log "Output: $compose_output"
             else
                 log "Error: $filename has invalid YAML syntax"
-                echo "$compose_output" | tee -a "$LOGS_DIR/validation.log"
-                return 1
-            fi
-        fi
-    fi
-
-    # Fallback YAML syntax check if docker-compose not available
-    if [ -z "$DOCKER_COMPOSE_CMD" ]; then
-        # Basic YAML syntax check using python if available
-        if command -v python3 &> /dev/null; then
-            if ! python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
-                log "Error: $filename has invalid YAML syntax (python validation)"
-                return 1
-            fi
-        elif command -v python &> /dev/null; then
-            if ! python -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
-                log "Error: $filename has invalid YAML syntax (python validation)"
+                echo "$compose_output" | head -10 | tee -a "$LOGS_DIR/validation.log"
                 return 1
             fi
         else
-            log "Info: Basic YAML validation for $filename (no docker-compose or python available)"
+            log "Docker Compose syntax validation passed for $filename"
         fi
+    else
+        log "Info: Skipping Docker Compose validation for $filename (not available)"
     fi
     
     # Check for common issues

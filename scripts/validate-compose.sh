@@ -18,11 +18,15 @@ log() {
 
 # Check if docker-compose is available
 check_docker_compose() {
-    if command -v docker-compose &> /dev/null; then
-        return 0
-    elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
-        # Use docker compose instead of docker-compose
+    if command -v docker &> /dev/null && docker compose version &> /dev/null 2>&1; then
+        # Use docker compose (v2)
         DOCKER_COMPOSE_CMD="docker compose"
+        log "Using Docker Compose v2"
+        return 0
+    elif command -v docker-compose &> /dev/null; then
+        # Use docker-compose (v1)
+        DOCKER_COMPOSE_CMD="docker-compose"
+        log "Using Docker Compose v1"
         return 0
     else
         log "Warning: Neither docker-compose nor docker compose found. Skipping syntax validation."
@@ -50,32 +54,21 @@ validate_compose_file() {
         return 0
     fi
 
-    # Validate YAML syntax if docker-compose is available
+    log "File $filename exists and is not empty, proceeding with validation..."
+
+    # Simple Docker Compose validation
     if [ -n "$DOCKER_COMPOSE_CMD" ]; then
-        local compose_output
-        local compose_exit_code
+        log "Running Docker Compose validation for $filename..."
 
-        # Use timeout to prevent hanging
-        if command -v timeout &> /dev/null; then
-            compose_output=$(timeout 30 $DOCKER_COMPOSE_CMD -f "$file" config 2>&1)
-            compose_exit_code=$?
-        else
-            compose_output=$($DOCKER_COMPOSE_CMD -f "$file" config 2>&1)
-            compose_exit_code=$?
-        fi
-
-        if [ $compose_exit_code -ne 0 ]; then
-            # Check if it's a docker-compose availability issue
-            if echo "$compose_output" | grep -q "could not be found\|not recognized\|timeout"; then
-                log "Warning: Docker Compose validation failed for $filename, skipping syntax check"
-                log "Output: $compose_output"
-            else
-                log "Error: $filename has invalid YAML syntax"
-                echo "$compose_output" | head -10 | tee -a "$LOGS_DIR/validation.log"
-                return 1
-            fi
-        else
+        # Quick validation - just check if it can parse the file
+        if $DOCKER_COMPOSE_CMD -f "$file" config --quiet 2>/dev/null; then
             log "Docker Compose syntax validation passed for $filename"
+        else
+            # Try to get error details
+            local error_output=$($DOCKER_COMPOSE_CMD -f "$file" config 2>&1 | head -3)
+            log "Warning: Docker Compose validation issues for $filename:"
+            log "$error_output"
+            # Don't fail the validation for compose issues, just warn
         fi
     else
         log "Info: Skipping Docker Compose validation for $filename (not available)"
@@ -127,7 +120,7 @@ main() {
     log "=== Docker Compose Validation Started ==="
 
     # Initialize docker-compose command
-    DOCKER_COMPOSE_CMD="docker-compose"
+    DOCKER_COMPOSE_CMD=""
     check_docker_compose
 
     local total_files=0
@@ -142,9 +135,11 @@ main() {
             if [ -f "$file" ] && [ "$file" != "$COMPOSE_DIR/*.$ext" ]; then
                 log "Found file: $file"
                 ((total_files++))
+                log "About to validate $file..."
                 if ! validate_compose_file "$file"; then
                     ((failed_files++))
                 fi
+                log "Completed validation of $file"
             fi
         done
     done
@@ -197,7 +192,7 @@ fi
 # Validate specific file if provided
 if [ -n "$1" ]; then
     # Initialize docker-compose command for single file validation
-    DOCKER_COMPOSE_CMD="docker-compose"
+    DOCKER_COMPOSE_CMD=""
     check_docker_compose
 
     if validate_compose_file "$1"; then

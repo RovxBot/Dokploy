@@ -89,71 +89,71 @@ jobs:
           case "${{ github.event.inputs.service }}" in
             "jellyfin")
               echo "Deploying Jellyfin..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.JELLYFIN_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYFIN_WEBHOOK }}"
               ;;
             "immich")
               echo "Deploying Immich..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.IMMICH_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.IMMICH_WEBHOOK }}"
               ;;
             "vaultwarden")
               echo "Deploying Vaultwarden..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.VAULTWARDEN_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.VAULTWARDEN_WEBHOOK }}"
               ;;
             "sonarr")
               echo "Deploying Sonarr..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.SONARR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.SONARR_WEBHOOK }}"
               ;;
             "sabnzbd")
               echo "Deploying SABnzbd..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.SABNZBD_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.SABNZBD_WEBHOOK }}"
               ;;
             "prowlarr")
               echo "Deploying Prowlarr..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.PROWLARR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.PROWLARR_WEBHOOK }}"
               ;;
             "jellyseerr")
               echo "Deploying Jellyseerr..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.JELLYSEERR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYSEERR_WEBHOOK }}"
               ;;
             "radarr")
               echo "Deploying Radarr..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.RADARR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.RADARR_WEBHOOK }}"
               ;;
             "cloudflared")
               echo "Deploying Cloudflared..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.CLOUDFLARED_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.CLOUDFLARED_WEBHOOK }}"
               ;;
             "duplicacy")
               echo "Deploying Duplicacy..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.DUPLICACY_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.DUPLICACY_WEBHOOK }}"
               ;;
             "diun")
               echo "Deploying DIUN..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.DIUN_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.DIUN_WEBHOOK }}"
               ;;
             "homeassistant")
               echo "Deploying Home Assistant..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
               ;;
             "netdata")
               echo "Deploying Netdata..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.NETDATA_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.NETDATA_WEBHOOK }}"
               ;;
             "all")
               echo "Deploying all services..."
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.JELLYFIN_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.IMMICH_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.VAULTWARDEN_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.SONARR_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.SABNZBD_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.PROWLARR_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.JELLYSEERR_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.RADARR_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.CLOUDFLARED_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.DUPLICACY_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.DIUN_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
-              curl -X POST -H "Content-Type: application/json" "${{ secrets.NETDATA_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYFIN_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.IMMICH_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.VAULTWARDEN_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.SONARR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.SABNZBD_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.PROWLARR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYSEERR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.RADARR_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.CLOUDFLARED_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.DUPLICACY_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.DIUN_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
+              curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.NETDATA_WEBHOOK }}"
               ;;
           esac
         else
@@ -163,67 +163,67 @@ jobs:
 
           if echo "$CHANGED_FILES" | grep -q "Jellyfin.yaml"; then
             echo "Deploying Jellyfin..."
-            curl -X POST "${{ secrets.JELLYFIN_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYFIN_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Immich.yml"; then
             echo "Deploying Immich..."
-            curl -X POST "${{ secrets.IMMICH_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.IMMICH_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Vaultwarden.yaml"; then
             echo "Deploying Vaultwarden..."
-            curl -X POST "${{ secrets.VAULTWARDEN_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.VAULTWARDEN_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Sonarr.yaml"; then
             echo "Deploying Sonarr..."
-            curl -X POST "${{ secrets.SONARR_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.SONARR_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "sabnzbd.yaml"; then
             echo "Deploying SABnzbd..."
-            curl -X POST "${{ secrets.SABNZBD_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.SABNZBD_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Prowlarr.yaml"; then
             echo "Deploying Prowlarr..."
-            curl -X POST "${{ secrets.PROWLARR_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.PROWLARR_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Jellyseerr.yaml"; then
             echo "Deploying Jellyseerr..."
-            curl -X POST "${{ secrets.JELLYSEERR_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.JELLYSEERR_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Radarr.yaml"; then
             echo "Deploying Radarr..."
-            curl -X POST "${{ secrets.RADARR_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.RADARR_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Cloudflared.yaml"; then
             echo "Deploying Cloudflared..."
-            curl -X POST "${{ secrets.CLOUDFLARED_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.CLOUDFLARED_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "Duplicacy/"; then
             echo "Deploying Duplicacy..."
-            curl -X POST "${{ secrets.DUPLICACY_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.DUPLICACY_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "update-monitor/"; then
             echo "Deploying DIUN..."
-            curl -X POST "${{ secrets.DIUN_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.DIUN_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "HomeAssistant/"; then
             echo "Deploying Home Assistant..."
-            curl -X POST "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.HOMEASSISTANT_WEBHOOK }}"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "compose/netdata.yml"; then
             echo "Deploying Netdata..."
-            curl -X POST "${{ secrets.NETDATA_WEBHOOK }}"
+            curl -X POST -H "Content-Type: application/json" -d '{"ref":"refs/heads/main","repository":{"default_branch":"main"}}' "${{ secrets.NETDATA_WEBHOOK }}"
           fi
         fi
     

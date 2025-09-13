@@ -18,7 +18,7 @@ services:
 
   # 2) One-time initializer (scale to 1 once, then back to 0)
   duplicacy-init:
-    image: gilbertchen/duplicacy:latest
+    image: gilbertchen/duplicacy:3.2.4
     environment:
       - TZ=Australia/Adelaide
       # Backblaze creds (use your Dokploy env; we map to the names Duplicacy expects)
@@ -45,7 +45,7 @@ services:
 
   # 3) Backup job (every 3 days at 00:00 Adelaide time)
   duplicacy-backup:
-    image: gilbertchen/duplicacy:latest
+    image: gilbertchen/duplicacy:3.2.4
     environment:
       - TZ=Australia/Adelaide
       - B2_ID=${DUPLICACY_B2_ID}
@@ -67,10 +67,11 @@ services:
         - "swarm.cronjob.tz=Australia/Adelaide"
         - "swarm.cronjob.skip-running=true"
         - "swarm.cronjob.command=sh -lc 'duplicacy -log -pref-dir /config/.duplicacy -repository /data backup -stats -threads 4'"
+        - "diun.enable=true"
 
   # 4) Prune job (keep only 2 latest; runs 00:30 same days)
   duplicacy-prune:
-    image: gilbertchen/duplicacy:latest
+    image: gilbertchen/duplicacy:3.2.4
     environment:
       - TZ=Australia/Adelaide
       - B2_ID=${DUPLICACY_B2_ID}
@@ -92,6 +93,7 @@ services:
         - "swarm.cronjob.tz=Australia/Adelaide"
         - "swarm.cronjob.skip-running=true"
         - "swarm.cronjob.command=sh -lc 'duplicacy -log -pref-dir /config/.duplicacy -repository /data prune -a -keep 0:2'"
+        - "diun.enable=true"
 
 volumes:
   # Rockstor NFS

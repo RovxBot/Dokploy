@@ -19,6 +19,7 @@ services:
         - "traefik.http.routers.jellyseerr.tls=false"
         - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
         - "traefik.docker.network=dokploy-network"
+        - "diun.enable=true"
 
 volumes:
   jellyseerr_config_v1:

@@ -22,6 +22,7 @@ services:
         - "traefik.http.routers.radarr.tls=false"
         - "traefik.http.services.radarr.loadbalancer.server.port=7878"
         - "traefik.docker.network=dokploy-network"
+        - "diun.enable=true"
 
 volumes:
   # Config on Rockstor

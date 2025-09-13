@@ -1,0 +1,273 @@
+version: "3.8"
+
+services:
+  # Storage cleanup service - runs automated cleanup tasks
+  storage-cleanup:
+    image: docker:24-cli
+    environment:
+      - TZ=Australia/Adelaide
+      - CLEANUP_THRESHOLD=80
+      - LOG_RETENTION_DAYS=7
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/log:/var/log
+      - /srv/appdata:/srv/appdata:ro
+      - storage_cleanup_logs:/logs
+    command: |
+      sh -c '
+        # Install required tools
+        apk add --no-cache bash curl findutils coreutils
+        
+        # Create cleanup script
+        cat > /cleanup.sh << "EOF"
+        #!/bin/bash
+        set -e
+        
+        LOG_FILE="/logs/cleanup.log"
+        CLEANUP_THRESHOLD=$${CLEANUP_THRESHOLD:-80}
+        
+        log_message() {
+            echo "$$(date "+%Y-%m-%d %H:%M:%S") - $$1" | tee -a "$$LOG_FILE"
+        }
+        
+        get_disk_usage() {
+            df / | awk "NR==2 {print $$5}" | sed "s/%//"
+        }
+        
+        cleanup_docker() {
+            log_message "Starting Docker cleanup..."
+            docker container prune -f
+            docker image prune -f
+            docker volume prune -f
+            docker builder prune -f
+            docker network prune -f
+            log_message "Docker cleanup completed"
+        }
+        
+        cleanup_logs() {
+            log_message "Starting log cleanup..."
+            find /var/log -name "*.log.*" -type f -mtime +7 -delete 2>/dev/null || true
+            find /var/log -name "*.gz" -type f -mtime +7 -delete 2>/dev/null || true
+            log_message "Log cleanup completed"
+        }
+        
+        main() {
+            current_usage=$$(get_disk_usage)
+            log_message "Current disk usage: $${current_usage}%"
+            
+            if [ "$$current_usage" -ge "$$CLEANUP_THRESHOLD" ]; then
+                log_message "Disk usage exceeds threshold. Running cleanup..."
+                cleanup_docker
+                cleanup_logs
+                final_usage=$$(get_disk_usage)
+                log_message "Cleanup completed. Final usage: $${final_usage}%"
+            else
+                log_message "Disk usage below threshold. No cleanup needed."
+            fi
+        }
+        
+        main
+        EOF
+        
+        chmod +x /cleanup.sh
+        
+        # Run cleanup script
+        /cleanup.sh
+      '
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=storage-cleanup"
+        - "swarm.cronjob.schedule=0 2 * * *"  # Daily at 2 AM
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+
+  # Storage monitoring service - checks disk usage and sends alerts
+  storage-monitor:
+    image: alpine:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - WARNING_THRESHOLD=85
+      - CRITICAL_THRESHOLD=90
+      - WEBHOOK_URL=${STORAGE_ALERT_WEBHOOK_URL}
+      - EMAIL_TO=${STORAGE_ALERT_EMAIL}
+    volumes:
+      - /:/host:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - storage_monitor_logs:/logs
+    command: |
+      sh -c '
+        # Install required tools
+        apk add --no-cache bash curl docker-cli coreutils
+        
+        # Create monitoring script
+        cat > /monitor.sh << "EOF"
+        #!/bin/bash
+        set -e
+        
+        LOG_FILE="/logs/monitor.log"
+        WARNING_THRESHOLD=$${WARNING_THRESHOLD:-85}
+        CRITICAL_THRESHOLD=$${CRITICAL_THRESHOLD:-90}
+        NODE_NAME=$$(hostname)
+        
+        log_message() {
+            echo "$$(date "+%Y-%m-%d %H:%M:%S") - $$1" | tee -a "$$LOG_FILE"
+        }
+        
+        send_alert() {
+            local severity="$$1"
+            local message="$$2"
+            
+            if [ -n "$$WEBHOOK_URL" ]; then
+                json_payload=$$(cat <<EOJSON
+        {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "themeColor": "$$([ "$$severity" = "CRITICAL" ] && echo "FF0000" || echo "FFA500")",
+            "summary": "Storage Alert - $$NODE_NAME",
+            "sections": [{
+                "activityTitle": "🚨 Storage Alert - $$severity",
+                "activitySubtitle": "$$NODE_NAME",
+                "facts": [
+                    {"name": "Severity", "value": "$$severity"},
+                    {"name": "Message", "value": "$$message"},
+                    {"name": "Timestamp", "value": "$$(date)"}
+                ]
+            }]
+        }
+        EOJSON
+                )
+                
+                curl -X POST -H "Content-Type: application/json" -d "$$json_payload" "$$WEBHOOK_URL" --silent || true
+            fi
+        }
+        
+        check_storage() {
+            log_message "Checking storage usage..."
+            
+            # Check root filesystem
+            usage=$$(df / | awk "NR==2 {print $$5}" | sed "s/%//")
+            used=$$(df -h / | awk "NR==2 {print $$3}")
+            total=$$(df -h / | awk "NR==2 {print $$2}")
+            
+            if [ "$$usage" -ge "$$CRITICAL_THRESHOLD" ]; then
+                message="CRITICAL: Root filesystem is $${usage}% full ($${used}/$${total})"
+                log_message "$$message"
+                send_alert "CRITICAL" "$$message"
+            elif [ "$$usage" -ge "$$WARNING_THRESHOLD" ]; then
+                message="WARNING: Root filesystem is $${usage}% full ($${used}/$${total})"
+                log_message "$$message"
+                send_alert "WARNING" "$$message"
+            else
+                log_message "OK: Root filesystem is $${usage}% full ($${used}/$${total})"
+            fi
+            
+            # Check Docker usage
+            if command -v docker >/dev/null 2>&1; then
+                docker_size=$$(docker system df --format "{{.Size}}" | head -1 || echo "Unknown")
+                log_message "Docker system usage: $$docker_size"
+            fi
+        }
+        
+        check_storage
+        EOF
+        
+        chmod +x /monitor.sh
+        
+        # Run monitoring script
+        /monitor.sh
+      '
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=storage-monitor"
+        - "swarm.cronjob.schedule=*/15 * * * *"  # Every 15 minutes
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+
+  # PostgreSQL maintenance service - specific for Immich database
+  postgres-maintenance:
+    image: postgres:14
+    environment:
+      - TZ=Australia/Adelaide
+      - PGPASSWORD=${DB_PASSWORD}
+    command: |
+      sh -c '
+        # Wait for database to be available
+        until pg_isready -h database -p 5432 -U ${DB_USERNAME}; do
+          echo "Waiting for database..."
+          sleep 5
+        done
+        
+        echo "Running PostgreSQL maintenance..."
+        
+        # Run VACUUM ANALYZE to reclaim space and update statistics
+        psql -h database -U ${DB_USERNAME} -d ${DB_DATABASE_NAME} -c "VACUUM ANALYZE;"
+        
+        # Run REINDEX to rebuild indexes
+        psql -h database -U ${DB_USERNAME} -d ${DB_DATABASE_NAME} -c "REINDEX DATABASE ${DB_DATABASE_NAME};"
+        
+        echo "PostgreSQL maintenance completed"
+      '
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: none
+      labels:
+        - "swarm.cronjob.enable=true"
+        - "swarm.cronjob.name=postgres-maintenance"
+        - "swarm.cronjob.schedule=0 3 * * 0"  # Weekly on Sunday at 3 AM
+        - "swarm.cronjob.tz=Australia/Adelaide"
+        - "swarm.cronjob.skip-running=true"
+      placement:
+        constraints:
+          - node.labels.immichdb == 1  # Run on same node as database
+
+  # Cron scheduler service
+  swarm-cronjob:
+    image: ghcr.io/crazy-max/swarm-cronjob:latest
+    environment:
+      - TZ=Australia/Adelaide
+      - LOG_LEVEL=info
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dokploy-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+
+volumes:
+  storage_cleanup_logs:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/storage-management/cleanup-logs
+
+  storage_monitor_logs:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=192.168.1.184,nfsvers=4.1,rw
+      device: :/export/appdata/storage-management/monitor-logs
+
+networks:
+  dokploy-network:
+    external: true

@@ -1,0 +1,20 @@
+# Simple Traefik configuration for Kubero (HTTP only for testing)
+# Place this file in: /etc/dokploy/traefik/dynamic/kubero.yml
+
+http:
+  routers:
+    # Kubero UI - HTTPS only
+    kubero-ui:
+      rule: "Host(`kubero.cooked.beer`)"
+      service: kubero-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    # Service pointing to k3s NGINX ingress controller
+    kubero-service:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.190:30665"

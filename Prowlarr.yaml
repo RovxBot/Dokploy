@@ -20,6 +20,7 @@ services:
         - "traefik.http.routers.prowlarr.tls=false"
         - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
         - "traefik.docker.network=dokploy-network"
+        - "diun.enable=true"
 
 volumes:
   prowlarr_config_v1:

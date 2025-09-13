@@ -22,6 +22,7 @@ services:
         - "traefik.http.routers.sonarr.tls=false"
         - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
         - "traefik.docker.network=dokploy-network"
+        - "diun.enable=true"
 
 volumes:
   sonarr_config_v2:

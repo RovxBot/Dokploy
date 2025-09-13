@@ -26,6 +26,8 @@ services:
       placement:
         constraints:
           - node.labels.jellyfin == 1                # keep Jellyfin on metal0
+      labels:
+        - "diun.enable=true"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8096/health"]

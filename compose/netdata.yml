@@ -45,6 +45,7 @@ services:
         - "traefik.http.routers.netdata.tls=false"
         - "traefik.http.services.netdata.loadbalancer.server.port=19999"
         - "traefik.docker.network=dokploy-network"
+        - "diun.enable=true"
 
 volumes:
   netdataconfig:
